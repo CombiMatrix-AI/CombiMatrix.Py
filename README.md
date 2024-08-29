@@ -17,4 +17,6 @@ everything else
 
 ### TODO
 - Make requirements file
-- 
+- Add block funcs
+- mke it go block by block
+- add gcode support

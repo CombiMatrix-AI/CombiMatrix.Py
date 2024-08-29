@@ -100,7 +100,7 @@ def set_voltage():
     dask.Release_Card(var_card)
     print("Release card successfully")
 
-def SetChipMap(channel, map):
+def SetChipMap(channel, chipmap):
     row = 0
     column = 0
     status = 0
@@ -113,7 +113,7 @@ def SetChipMap(channel, map):
 
     for column in range(16):
         for row in range(64):
-            value = map[16 * row + column]
+            value = chipmap[16 * row + column]
             value <<= 10
 
             address = column
@@ -140,7 +140,7 @@ def SetChipMap(channel, map):
     return status
 
 
-def GetChipMap(channel, map):
+def GetChipMap(channel, chipmap):
     status = 0
     column = 0
     row = 0
@@ -171,7 +171,7 @@ def GetChipMap(channel, map):
 
 
             dataRead >>= 14
-            map[16 * row + column] = dataRead
+            chipmap[16 * row + column] = dataRead
 
     return status
 

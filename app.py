@@ -6,8 +6,9 @@ import sys
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 import configparser
-import keithley  # Import the init_keithley function
 
+import keithley as ke
+import chip
 
 # TODO: this clusterfuck of a ui is all in a single file pls fix
 
@@ -71,7 +72,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.init_keithley_button = QtWidgets.QPushButton("Init. Keithley", self)  # New button
         self.init_keithley_button.setGeometry(270, 50, 100, 30)  # Positioning the button
-        self.init_keithley_button.clicked.connect(keithley.zero_keithley)
+        self.init_keithley_button.clicked.connect(lambda: keithley.zero_keithley())
+
+        self.start_button = QtWidgets.QPushButton("Start", self)  # New start button
+        self.start_button.setGeometry(380, 50, 100, 30)  # Positioning the button
+        self.start_button.clicked.connect(start_main_function)
 
         self.grid_widget = GridWidget()
 
@@ -102,6 +107,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.open_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.init_keithley_button, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)  # Adding the button to the layout
+        layout.addWidget(self.start_button, 0,
+                         QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)  # Adding the start button to the layout
         layout.addWidget(self.current_well_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.current_well_textbox, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
@@ -110,7 +117,7 @@ class MainWindow(QtWidgets.QMainWindow):
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout.addWidget(self.version_label, 0,
                          QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(self.output_log_textbox, 1)
+        layout.addWidget(self.output_log_textbox, 10)
 
         container = QtWidgets.QWidget()
         container.setLayout(layout)
@@ -127,14 +134,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def open_file_dialog(self):
         # TODO: AttributeError: type object 'QFileDialog' has no attribute 'Options'
-        options = QtWidgets.QFileDialog.Options()
+        options = QtWidgets.QFileDialog.options()
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "",
                                                              "All Files (*);;Python Files (*.py)", options=options)
         if file_name:
             print(f"File chosen: {file_name}")
 
+def start_main_function():
+    # Add the main function logic here
+    main_window.output_log_textbox.append("Main function started")
+    chipmap = [0] * 984 + [2] * 40
 
-def run_app():
+    chip.SetChipMap(2, chipmap)
+
+    keithley.zero_keithley()
+    keithley.run_keithley()
+    keithley.close_keithley()
+
+if __name__ == "__main__":
+    keithley = ke.Keithley()
     # Create a ConfigParser object
     config = configparser.ConfigParser()
 
@@ -148,17 +166,12 @@ def run_app():
     main_window = MainWindow()
     main_window.show()
 
-    main_window.grid_widget.set_square_color(0, 0, 'red')
-    main_window.grid_widget.set_square_color(1, 1, 'red')
-    main_window.grid_widget.set_square_color(2, 2, 'red')
+    for col in range(8, 16):
+        main_window.grid_widget.set_square_color(61, col, 'yellow')
+
+    for col in range(16):
+        main_window.grid_widget.set_square_color(62, col, 'yellow')
+        main_window.grid_widget.set_square_color(63, col, 'yellow')
 
     app.exec()
-
-
-if __name__ == "__main__":
-    keithley_port = keithley.startup_keithley()
-    keithley.zero_keithley(keithley_port)
-    keithley.run_keithley(keithley_port)
-    keithley.close_keithley(keithley_port)
-
-    run_app()
+    chip.set_voltage()
