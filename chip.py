@@ -1,9 +1,5 @@
 ######################################################################################
-# ADLINK PCIe-9101 to acquire/measure DATA  
-# This sample program shows how to import DLL
-# AI One shot acquisition for PCIe-9101
-# This sample program run on Python 3.x
-# ADLINK Technologies 2023.08.4
+# Controls the ADLINK card
 ######################################################################################
 
 from operator import truediv
@@ -17,17 +13,12 @@ from ctypes import *
 # python -m pip install matplotlib
 # also use python -m pip install pillow to save image
 import time
-from msvcrt import kbhit, getch
 import dask91xx
 
 dask = dask91xx.Dask91xxLib()
-
-err = 0
 card_num = 0
-Channel = 0  # AO channel to be written
 
-
-def ExitClear():
+def ExitClear(var_card):
     if (var_card >= 0):
         dask.Release_Card(var_card)
 
@@ -39,69 +30,217 @@ def ExitClear():
 # Step1. Open and Initialize Device
 #############################################
 
-card_num = 0
-var_card = dask.Register_Card(52, card_num) # PCIe_9101 = 52, see dask91xx.py
-if var_card < 0:
-    print(f"UD_Register_Card fail, error = {var_card}\n")
-    exit()
-print("Register card successfully")
+def set_voltage():
+    err = 0
+    Channel = 0  # AO channel to be written
 
-#############################################
-# AOConfig
-# Configure DAQ
-# Step 2.Configure AO
-#############################################
+    var_card = dask.Register_Card(52, card_num) # PCIe_9101 = 52, see dask91xx.py
+    if var_card < 0:
+        print(f"UD_Register_Card fail, error = {var_card}\n")
+        exit()
+    print("Register card successfully")
 
-dask.AO_relay_EN(var_card, 1)
+    #############################################
+    # AOConfig
+    # Configure DAQ
+    # Step 2.Configure AO
+    #############################################
 
-print("finish")
+    dask.AO_relay_EN(var_card, 1)
 
-#############################################
-# AOStart
+    print("finish")
 
-# Step 3. AO Start
-#############################################
+    #############################################
+    # AOStart
 
-print("Start AO")
-Stopped = list()
-Stopped.append(False)
+    # Step 3. AO Start
+    #############################################
 
-HalfReady = list()
-VBuffer = list()
-AccessCnt = list()
-Startpos = c_uint32()
+    print("Start AO")
+    Stopped = list()
+    Stopped.append(False)
 
-while (True):
+    HalfReady = list()
+    VBuffer = list()
+    AccessCnt = list()
+    Startpos = c_uint32()
 
-    Channel = int(input("AO Channel Number to be update: [0 or 1] "))
-    if (Channel > 1):
-        print(f"Invalid Channel Number... Set to Channel 0\n")
-        Channel = 0
+    while (True):
 
-    Voltage = float(input("AO voltage to be updated: [-10 ~ 10]"))
-    if (Voltage > 10 or Voltage < -10):
-        print(f"Out of range, forcedly ouput 10V\n")
-        Voltage = 0
+        Channel = int(input("AO Channel Number to be update: [0 or 1] "))
+        if (Channel > 1):
+            print(f"Invalid Channel Number... Set to Channel 0\n")
+            Channel = 0
 
-    err = dask.AO_VWriteChannel(var_card, Channel, Voltage)
-    if (err < 0):
-        print(f"AO_VWriteChannel Error: %d\n", err)
-        ExitClear()
+        Voltage = float(input("AO voltage to be updated: [-10 ~ 10]"))
+        if (Voltage > 10 or Voltage < -10):
+            print(f"Out of range, forcedly ouput 10V\n")
+            Voltage = 0
 
-    text = input("\n (C)ontinue?")
-    if text != "C" and text != "c":
-        break
+        err = dask.AO_VWriteChannel(var_card, Channel, Voltage)
+        if (err < 0):
+            print(f"AO_VWriteChannel Error: %d\n", err)
+            ExitClear(var_card)
 
-if (Stopped):
-    print(f"\nAO Update Done...\n")
-else:
-    print(f"\nAO will be stopped...\n")
+        text = input("\n (C)ontinue?")
+        if text != "C" and text != "c":
+            break
 
-#############################################
-# Stop AO
-# Step 4.Stop AO
-#############################################
+    if (Stopped):
+        print(f"\nAO Update Done...\n")
+    else:
+        print(f"\nAO will be stopped...\n")
 
-var_ret = dask.AO_AsyncClear(var_card, AccessCnt, 0)
-dask.Release_Card(var_card)
-print("Release card successfully")
+    #############################################
+    # Stop AO
+    # Step 4.Stop AO
+    #############################################
+
+    var_ret = dask.AO_AsyncClear(var_card, AccessCnt, 0)
+    dask.Release_Card(var_card)
+    print("Release card successfully")
+
+def SetChipMap(channel, map):
+    row = 0
+    column = 0
+    status = 0
+    address = 0x0
+    value = 0
+    wr = 0
+    dataToWrite = 0x0000
+
+    channel <<= 13
+
+    for column in range(16):
+        for row in range(64):
+            value = map[16 * row + column]
+            value <<= 10
+
+            address = column
+            address <<= 6
+            address |= row
+
+            wr = 0x0
+            wr <<= 12
+            dataToWrite = address | value | wr | channel
+
+            status = dask.DO_WritePort(card_num, 0, dataToWrite)
+            wait(0.00002)
+
+            wr = 0x1
+            wr <<= 12
+            dataToWrite = address | value | wr | channel
+
+            status = dask.DO_WritePort(card_num, 0, dataToWrite)
+            wait(0.00002)
+
+            dataToWrite = 0
+            address = 0
+
+    return status
+
+
+def GetChipMap(channel, map):
+    status = 0
+    column = 0
+    row = 0
+    address = 0x0
+    value = 0
+    wr = 0x1
+    dataToWrite = 0x0000
+    dataRead = 0x0
+
+    channel <<= 13
+    value <<= 10
+    wr <<= 12
+
+
+    for column in range(16):
+        for row in range(64):
+            address = column
+            address <<= 6
+            address += row
+
+            dataToWrite = address | value | wr | channel
+
+
+            status = dask.DO_WritePort(card_num, 0, dataToWrite)
+            wait(0.00002)
+            status = dask.DI_ReadPort(card_num, 0, dataRead)
+            wait(0.00002)
+
+
+            dataRead >>= 14
+            map[16 * row + column] = dataRead
+
+    return status
+
+
+def SetChipState(channel, row, column, value):
+    status = 0
+    address = 0x0
+    wr = 0
+    dataToWrite = 0x0000
+
+    channel <<= 13
+
+
+    value <<= 10
+
+    address = column
+    address <<= 6
+    address |= row
+
+    wr = 0x0
+    wr <<= 12
+    dataToWrite = address | value | wr | channel
+
+    status = dask.DO_WritePort(card_num, 0, dataToWrite)
+    wait(0.00002)
+
+    wr = 0x1
+    wr <<= 12
+    dataToWrite = address | value | wr | channel
+
+    status = dask.DO_WritePort(card_num, 0, dataToWrite)
+    wait(0.00002)
+
+    dataToWrite = 0
+    address = 0
+
+    return status
+
+
+def GetChipState(channel, row, column, value):
+    status = 0
+    address = 0x0
+    wr = 0x1
+    dataToWrite = 0x0000
+    dataRead = 0x0
+
+    channel <<= 13
+    wr <<= 12
+
+
+    address = column
+    address <<= 6
+    address += row
+
+    dataToWrite = address | wr | channel
+
+
+    status = dask.DO_WritePort(card_num, 0, dataToWrite)
+    wait(0.00002)
+    status = dask.DI_ReadPort(card_num, 0, dataRead)
+    wait(0.00002)
+
+    dataRead >>= 14
+    value = dataRead
+
+    return status
+
+def wait(duration, get_now=time.perf_counter):
+    now = get_now()
+    end = now + duration
+    while now < end:
+        now = get_now()

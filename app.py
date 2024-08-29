@@ -6,6 +6,7 @@ import sys
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 import configparser
+import keithley  # Import the init_keithley function
 
 
 # TODO: this clusterfuck of a ui is all in a single file pls fix
@@ -33,17 +34,17 @@ class SetupWindow(QtWidgets.QMainWindow):
 class GridWidget(QtWidgets.QWidget):
     def __init__(self, rows=64, columns=16):
         super().__init__()
-        self.setFixedSize(columns * 6, rows * 6)  # Set a fixed size for the widget
+        self.setStyleSheet("background-color: black;")  # Set background color to black
         self.grid_layout = QtWidgets.QGridLayout(self)
-        self.grid_layout.setSpacing(0)  # Set spacing between squares
+        self.grid_layout.setSpacing(1)  # Set spacing between squares
         self.squares = []
 
         for row in range(rows):
             row_squares = []
             for col in range(columns):
                 square = QtWidgets.QLabel(self)
-                square.setFixedSize(6, 6)  # Set a fixed size for the squares
-                square.setStyleSheet("background-color: white; border: 1.2px solid black;")
+                square.setFixedSize(5, 5)  # Set a fixed size for the squares
+                square.setStyleSheet("background-color: grey;")
                 square.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
                 self.grid_layout.addWidget(square, row, col)
                 row_squares.append(square)
@@ -51,7 +52,7 @@ class GridWidget(QtWidgets.QWidget):
 
     def set_square_color(self, row, col, color):
         if 0 <= row < len(self.squares) and 0 <= col < len(self.squares[row]):
-            self.squares[row][col].setStyleSheet(f"background-color: {color}; border: 1px solid black;")
+            self.squares[row][col].setStyleSheet(f"background-color: {color};")
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -59,6 +60,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.resize(800, 600)  # Bigger is better!!
         self.setup_window = SetupWindow()
+
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.setGeometry(50, 50, 100, 30)
         self.setup_button.clicked.connect(self.setup_window.show)
@@ -66,6 +68,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.open_button = QtWidgets.QPushButton("Open File", self)
         self.open_button.setGeometry(160, 50, 100, 30)
         self.open_button.clicked.connect(self.open_file_dialog)
+
+        self.init_keithley_button = QtWidgets.QPushButton("Init. Keithley", self)  # New button
+        self.init_keithley_button.setGeometry(270, 50, 100, 30)  # Positioning the button
+        self.init_keithley_button.clicked.connect(keithley.zero_keithley)
 
         self.grid_widget = GridWidget()
 
@@ -94,6 +100,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO: pls fix my horrible layout
         layout.addWidget(self.setup_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.open_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.init_keithley_button, 0,
+                         QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)  # Adding the button to the layout
         layout.addWidget(self.current_well_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.current_well_textbox, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
@@ -118,7 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
         apply_stylesheet(QtWidgets.QApplication.instance(), theme=theme)
 
     def open_file_dialog(self):
-        #TODO: AttributeError: type object 'QFileDialog' has no attribute 'Options'
+        # TODO: AttributeError: type object 'QFileDialog' has no attribute 'Options'
         options = QtWidgets.QFileDialog.Options()
         file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "",
                                                              "All Files (*);;Python Files (*.py)", options=options)
@@ -139,8 +147,18 @@ def run_app():
 
     main_window = MainWindow()
     main_window.show()
+
+    main_window.grid_widget.set_square_color(0, 0, 'red')
+    main_window.grid_widget.set_square_color(1, 1, 'red')
+    main_window.grid_widget.set_square_color(2, 2, 'red')
+
     app.exec()
 
 
 if __name__ == "__main__":
+    keithley_port = keithley.startup_keithley()
+    keithley.zero_keithley(keithley_port)
+    keithley.run_keithley(keithley_port)
+    keithley.close_keithley(keithley_port)
+
     run_app()
