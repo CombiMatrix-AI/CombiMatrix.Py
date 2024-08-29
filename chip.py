@@ -1,10 +1,10 @@
-#####################################################################################
+######################################################################################
 # ADLINK PCIe-9101 to acquire/measure DATA  
 # This sample program shows how to import DLL
 # AI One shot acquisition for PCIe-9101
 # This sample program run on Python 3.x
 # ADLINK Technologies 2023.08.4
-#####################################################################################
+######################################################################################
 
 from operator import truediv
 import os
@@ -19,7 +19,6 @@ from ctypes import *
 import time
 from msvcrt import kbhit, getch
 import dask91xx
-import configs
 
 dask = dask91xx.Dask91xxLib()
 

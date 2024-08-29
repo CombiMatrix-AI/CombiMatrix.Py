@@ -1,11 +1,14 @@
+######################################################################################
+#
 # Driver for ADLINK PCIe DAQ
 # Taken from PCIS-DASK v24.06 C:\ADLINK\PCIS-DASK\Samples\91xx\Samples_Python
+#
+######################################################################################
 
 from collections import defaultdict
 from ctypes import *
 import platform
 from unittest import defaultTestLoader
-
 
 class Dask91xxLib:
     PCIe_9101 = 52
