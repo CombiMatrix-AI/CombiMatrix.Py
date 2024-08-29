@@ -1,10 +1,18 @@
 import pyvisa
+import configparser
+
 
 def main():
     print("Begin")
 
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    # Access values from the configuration file
+    keithley_port = config.get('General', 'keithley_port')
+
     # Open a GPIB connection to the Keithley 6485
-    keithley = pyvisa.ResourceManager().open_resource('GPIB0::14::INSTR')
+    keithley = pyvisa.ResourceManager().open_resource(keithley_port)
 
     keithley.write('*RST') #Return 6485 to RST defaults.
     keithley.write('SYST:ZCH ON') #Enable zero check.
