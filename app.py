@@ -1,7 +1,6 @@
 ######################################################################################
 # Main UI control of app
 ######################################################################################
-import random
 import sys
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
@@ -13,7 +12,6 @@ import pcie9101
 
 from view.gridwidget import GridWidget
 from view.setupwindow import SetupWindow
-
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -99,77 +97,6 @@ class MainWindow(QtWidgets.QMainWindow):
         if file_name:
             print(f"File chosen: {file_name}")
 
-    def chip_test(self, channel):
-        chipmap_in = [0] * 1024
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 1 Passed")
-        else:
-            self.output_log_textbox.append("Test 1 Failed")
-
-        chipmap_in = [1] * 1024
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 2 Passed")
-        else:
-            self.output_log_textbox.append("Test 2 Failed")
-
-        chipmap_in = [2] * 1024
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 3 Passed")
-        else:
-            self.output_log_textbox.append("Test 3 Failed")
-
-        chipmap_in = [3] * 1024
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 4 Passed")
-        else:
-            self.output_log_textbox.append("Test 4 Failed")
-
-        chipmap_in = [1 if i % 2 == 0 else 2 for i in range(1024)]
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 5 Passed")
-        else:
-            self.output_log_textbox.append("Test 5 Failed")
-
-        chipmap_in = [2 if i % 2 == 0 else 3 for i in range(1024)]
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 6 Passed")
-        else:
-            self.output_log_textbox.append("Test 6 Failed")
-
-        chipmap_in = [random.randint(0, 3) for _ in range(1024)]
-        chipmap_out = []
-        adlink.set_chip_map(channel, chipmap_in)
-        adlink.get_chip_map(channel, chipmap_out)
-
-        if chipmap_in == chipmap_out:
-            self.output_log_textbox.append("Test 7 Passed")
-        else:
-            self.output_log_textbox.append("Test 7 Failed")
-
     def start(self):
         # Add the main function logic here
         self.output_log_textbox.append("Main function started")
@@ -182,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         keithley.zero()
         keithley.run()
         keithley.close()
+
 
 if __name__ == "__main__":
     keithley = ke6485.Keithley()
