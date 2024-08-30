@@ -1,7 +1,7 @@
 ######################################################################################
 # Main UI control of app
 ######################################################################################
-
+import random
 import sys
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.open_button.setGeometry(160, 50, 100, 30)
         self.open_button.clicked.connect(self.open_file_dialog)
 
-        self.init_keithley_button = QtWidgets.QPushButton("Init. Keithley", self)  # New button
+        self.init_keithley_button = QtWidgets.QPushButton("Zero Keithley", self)  # New button
         self.init_keithley_button.setGeometry(270, 50, 100, 30)  # Positioning the button
         self.init_keithley_button.clicked.connect(lambda: keithley.zero())
 
@@ -39,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.grid_widget = GridWidget()
 
-        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.00001", self)
+        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.001", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.theme_label = QtWidgets.QLabel("Theme:", self)
@@ -99,12 +99,85 @@ class MainWindow(QtWidgets.QMainWindow):
         if file_name:
             print(f"File chosen: {file_name}")
 
+    def chip_test(self, channel):
+        chipmap_in = [0] * 1024
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 1 Passed")
+        else:
+            self.output_log_textbox.append("Test 1 Failed")
+
+        chipmap_in = [1] * 1024
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 2 Passed")
+        else:
+            self.output_log_textbox.append("Test 2 Failed")
+
+        chipmap_in = [2] * 1024
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 3 Passed")
+        else:
+            self.output_log_textbox.append("Test 3 Failed")
+
+        chipmap_in = [3] * 1024
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 4 Passed")
+        else:
+            self.output_log_textbox.append("Test 4 Failed")
+
+        chipmap_in = [1 if i % 2 == 0 else 2 for i in range(1024)]
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 5 Passed")
+        else:
+            self.output_log_textbox.append("Test 5 Failed")
+
+        chipmap_in = [2 if i % 2 == 0 else 3 for i in range(1024)]
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 6 Passed")
+        else:
+            self.output_log_textbox.append("Test 6 Failed")
+
+        chipmap_in = [random.randint(0, 3) for _ in range(1024)]
+        chipmap_out = []
+        adlink.set_chip_map(channel, chipmap_in)
+        adlink.get_chip_map(channel, chipmap_out)
+
+        if chipmap_in == chipmap_out:
+            self.output_log_textbox.append("Test 7 Passed")
+        else:
+            self.output_log_textbox.append("Test 7 Failed")
+
     def start(self):
         # Add the main function logic here
         self.output_log_textbox.append("Main function started")
         chipmap = [0] * (984 - 160) + [2] * 40 + [0] * 160
 
         adlink.set_chip_map(1, chipmap)
+
+        adlink.set_voltage()
 
         keithley.zero()
         keithley.run()
@@ -120,9 +193,6 @@ if __name__ == "__main__":
     # Read/Access values from the configuration file
     config.read("config.ini")
     theme = config.get('General', 'theme')
-
-    adlink.set_voltage()
-
 
     app = QtWidgets.QApplication(sys.argv)
     apply_stylesheet(app, theme=theme)

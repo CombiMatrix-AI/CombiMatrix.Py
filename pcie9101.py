@@ -2,16 +2,6 @@
 # Controls the ADLINK PCIe-9101 card
 ######################################################################################
 
-from operator import truediv
-import os
-from tokenize import Double
-import numpy as np
-from ctypes import *
-# import matplotlib.pyplot as plt  #used to pilot chart
-# if not installed , use following command to install
-# python -m pip install -U pip setuptools
-# python -m pip install matplotlib
-# also use python -m pip install pillow to save image
 import time
 import dask91xx
 
@@ -29,24 +19,17 @@ class Adlink:
 
         print("Start AO")
 
-        Stopped = list()
-        Stopped.append(False)
+        stopped = list()
+        stopped.append(False)
 
-        AccessCnt = list()
+        access_cnt = list()
 
         while (True):
 
-            Channel = int(input("AO Channel Number to be update: [0 or 1] "))
-            if (Channel > 1):
-                print(f"Invalid Channel Number... Set to Channel 0\n")
-                Channel = 0
+            channel = 0 # 0 or 1
+            voltage = 0 # -10 to 10
 
-            Voltage = float(input("AO voltage to be updated: [-10 ~ 10]"))
-            if (Voltage > 10 or Voltage < -10):
-                print(f"Out of range, forcedly ouput 10V\n")
-                Voltage = 0
-
-            err = self.dask.AO_VWriteChannel(self.var_card, Channel, Voltage)
+            err = self.dask.AO_VWriteChannel(self.var_card, channel, voltage)
             if (err < 0):
                 print(f"AO_VWriteChannel Error: %d\n", err)
                 self.exit_clear(self.var_card)
@@ -55,17 +38,12 @@ class Adlink:
             if text != "C" and text != "c":
                 break
 
-        if (Stopped):
+        if (stopped):
             print(f"\nAO Update Done...\n")
         else:
             print(f"\nAO will be stopped...\n")
 
-        #############################################
-        # Stop AO
-        # Step 4.Stop AO
-        #############################################
-
-        var_ret = self.dask.AO_AsyncClear(self.var_card, AccessCnt, 0)
+        var_ret = self.dask.AO_AsyncClear(self.var_card, access_cnt, 0)
         self.dask.Release_Card(self.var_card)
         print("Release card successfully")
 
@@ -76,8 +54,6 @@ class Adlink:
         print("card release")
 
     def set_chip_map(self, channel, chipmap):
-        channel <<= 13
-
         for column in range(16):
             for row in range(64):
                 value = chipmap[16 * row + column]
@@ -112,7 +88,7 @@ class Adlink:
     def get_chip_map(self, channel, chipmap):
         for column in range(16):
             for row in range(64):
-                chipmap[16 * row + column] = self.get_chip_state(self, channel, row, column)
+                chipmap[16 * row + column] = self.get_chip_state(channel, row, column)
 
         return chipmap
 
