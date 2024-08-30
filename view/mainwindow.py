@@ -46,10 +46,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.current_well_textbox = QtWidgets.QLineEdit(self)
         self.current_well_textbox.setReadOnly(True)
 
-        self.output_log_textbox = QtWidgets.QTextEdit(self)
-        self.output_log_textbox.setReadOnly(True)
-        self.output_log_textbox.setPlaceholderText("Output Log")
-
         layout = QtWidgets.QHBoxLayout()
 
         # TODO: pls fix my horrible layout
@@ -67,7 +63,6 @@ class MainWindow(QtWidgets.QMainWindow):
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout.addWidget(self.version_label, 0,
                          QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
-        layout.addWidget(self.output_log_textbox, 10)
 
         container = QtWidgets.QWidget()
         container.setLayout(layout)
@@ -84,15 +79,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def open_file_dialog(self):
         # TODO: AttributeError: type object 'QFileDialog' has no attribute 'Options'
-        options = QtWidgets.QFileDialog.options()
-        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "",
-                                                             "All Files (*);;Python Files (*.py)", options=options)
-        if file_name:
-            print(f"File chosen: {file_name}")
+        print("test")
+        # options = QtWidgets.QFileDialog.options()
+        # file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "",
+        #                                                     "All Files (*);;Python Files (*.py)", options=options)
+        # if file_name:
+        #    print(f"File chosen: {file_name}")
 
     def start(self):
         # Add the main function logic here
-        self.output_log_textbox.append("Main function started")
+        print("Main function started")
         chipmap = [0] * (984 - 160) + [2] * 40 + [0] * 160
 
         adlink.set_chip_map(1, chipmap)

@@ -6,7 +6,8 @@ import configparser
 from PyQt6 import QtWidgets
 from qt_material import apply_stylesheet
 
-import view.mainwindow
+from view.mainwindow import MainWindow
+from view.outputlog import OutputWindow
 
 if __name__ == "__main__":
     # Create a ConfigParser object
@@ -18,7 +19,14 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     apply_stylesheet(app, theme=theme)
-    main_window = view.mainwindow.MainWindow()
+    main_window = MainWindow()
     main_window.show()
+
+    output_window = OutputWindow()
+    output_window.show()
+
+    # Now, redirect standard output to our text widget
+    sys.stdout = output_window
+
     app.exec()
 

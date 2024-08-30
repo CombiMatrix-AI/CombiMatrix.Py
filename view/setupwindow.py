@@ -31,19 +31,19 @@ class SetupWindow(QtWidgets.QMainWindow):
 
     def chip_test(self, channel):
         for i in range(7):
-            if i == 1:
+            if i == 0:
                 chipmap_in = [0] * 1024
-            elif i == 2:
+            elif i == 1:
                 chipmap_in = [1] * 1024
-            elif i == 3:
+            elif i == 2:
                 chipmap_in = [2] * 1024
-            elif i == 4:
+            elif i == 3:
                 chipmap_in = [3] * 1024
-            elif i == 5:
+            elif i == 4:
                 chipmap_in = [1 if j % 2 == 0 else 2 for j in range(1024)]
-            elif i == 6:
+            elif i == 5:
                 chipmap_in = [2 if k % 2 == 0 else 3 for k in range(1024)]
-            elif i == 7:
+            elif i == 6:
                 chipmap_in = [random.randint(0, 3) for _ in range(1024)]
 
             chipmap_out = [0] * 1024
@@ -52,9 +52,9 @@ class SetupWindow(QtWidgets.QMainWindow):
             adlink.get_chip_map(channel, chipmap_out)
 
             if chipmap_in == chipmap_out:
-                self.output_log_textbox.append(f"Test {i} Passed")
+                print(f"Test {i} Passed")
             else:
-                self.output_log_textbox.append(f"Test {i} Failed")
+                print(f"Test {i} Failed")
                 differences = [(l, chipmap_in[l], chipmap_out[l]) for l in range(len(chipmap_in)) if
                                chipmap_in[l] != chipmap_out[l]]
                 # Print differences
