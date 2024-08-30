@@ -7,53 +7,12 @@ from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 import configparser
 
-import keithley as ke
-import chip
-
-# TODO: this clusterfuck of a ui is all in a single file pls fix
-
-class SetupWindow(QtWidgets.QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.tab_widget = QtWidgets.QTabWidget(self)
-        self.tab_widget.addTab(QtWidgets.QWidget(), "Block Definitions")
-        self.tab_widget.addTab(QtWidgets.QWidget(), "Block List")
-        self.tab_widget.addTab(QtWidgets.QWidget(), "Voltage Definition")
-
-        # Create the Chip Test tab with a GridWidget
-        chip_test_widget = QtWidgets.QWidget()
-        chip_test_layout = QtWidgets.QVBoxLayout(chip_test_widget)
-        self.grid_widget = GridWidget()
-        chip_test_layout.addWidget(self.grid_widget)
-        self.tab_widget.addTab(chip_test_widget, "Chip Test")
-
-        self.tab_widget.addTab(QtWidgets.QWidget(), "Machine Setup")
-        self.tab_widget.addTab(QtWidgets.QWidget(), "Keithley Setup")
-        self.setCentralWidget(self.tab_widget)
+import ke6485
+import pcie9101
 
 
-class GridWidget(QtWidgets.QWidget):
-    def __init__(self, rows=64, columns=16):
-        super().__init__()
-        self.setStyleSheet("background-color: black;")  # Set background color to black
-        self.grid_layout = QtWidgets.QGridLayout(self)
-        self.grid_layout.setSpacing(1)  # Set spacing between squares
-        self.squares = []
-
-        for row in range(rows):
-            row_squares = []
-            for col in range(columns):
-                square = QtWidgets.QLabel(self)
-                square.setFixedSize(5, 5)  # Set a fixed size for the squares
-                square.setStyleSheet("background-color: grey;")
-                square.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
-                self.grid_layout.addWidget(square, row, col)
-                row_squares.append(square)
-            self.squares.append(row_squares)
-
-    def set_square_color(self, row, col, color):
-        if 0 <= row < len(self.squares) and 0 <= col < len(self.squares[row]):
-            self.squares[row][col].setStyleSheet(f"background-color: {color};")
+from view.gridwidget import GridWidget
+from view.setupwindow import SetupWindow
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -72,11 +31,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.init_keithley_button = QtWidgets.QPushButton("Init. Keithley", self)  # New button
         self.init_keithley_button.setGeometry(270, 50, 100, 30)  # Positioning the button
-        self.init_keithley_button.clicked.connect(lambda: keithley.zero_keithley())
+        self.init_keithley_button.clicked.connect(lambda: keithley.zero())
 
         self.start_button = QtWidgets.QPushButton("Start", self)  # New start button
         self.start_button.setGeometry(380, 50, 100, 30)  # Positioning the button
-        self.start_button.clicked.connect(start_main_function)
+        self.start_button.clicked.connect(self.start)
 
         self.grid_widget = GridWidget()
 
@@ -140,19 +99,21 @@ class MainWindow(QtWidgets.QMainWindow):
         if file_name:
             print(f"File chosen: {file_name}")
 
-def start_main_function():
-    # Add the main function logic here
-    main_window.output_log_textbox.append("Main function started")
-    chipmap = [0] * 984 + [2] * 40
+    def start(self):
+        # Add the main function logic here
+        self.output_log_textbox.append("Main function started")
+        chipmap = [0] * (984 - 160) + [2] * 40 + [0] * 160
 
-    chip.SetChipMap(2, chipmap)
+        adlink.set_chip_map(1, chipmap)
 
-    keithley.zero_keithley()
-    keithley.run_keithley()
-    keithley.close_keithley()
+        keithley.zero()
+        keithley.run()
+        keithley.close()
 
 if __name__ == "__main__":
-    keithley = ke.Keithley()
+    keithley = ke6485.Keithley()
+    adlink = pcie9101.Adlink()
+
     # Create a ConfigParser object
     config = configparser.ConfigParser()
 
@@ -160,18 +121,12 @@ if __name__ == "__main__":
     config.read("config.ini")
     theme = config.get('General', 'theme')
 
+    adlink.set_voltage()
+
+
     app = QtWidgets.QApplication(sys.argv)
     apply_stylesheet(app, theme=theme)
-
     main_window = MainWindow()
     main_window.show()
-
-    for col in range(8, 16):
-        main_window.grid_widget.set_square_color(61, col, 'yellow')
-
-    for col in range(16):
-        main_window.grid_widget.set_square_color(62, col, 'yellow')
-        main_window.grid_widget.set_square_color(63, col, 'yellow')
-
     app.exec()
-    chip.set_voltage()
+

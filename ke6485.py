@@ -10,7 +10,7 @@ class Keithley:
     def __init__(self):
         self.keithley = pyvisa.ResourceManager().open_resource('GPIB0::14::INSTR')
 
-    def zero_keithley(self):
+    def zero(self):
         self.keithley.write('*RST')  # Return 6485 to RST defaults.
         self.keithley.write('SYST:ZCH ON')  # Enable zero check.
         self.keithley.write('CURR:RANG 2e-9')  # Select the 2nA range.
@@ -22,7 +22,7 @@ class Keithley:
         self.keithley.write('CURR:RANG:AUTO ON')  # Auto range
         self.keithley.write('SYST:ZCH OFF')  # disable zero check
 
-    def run_keithley(self):
+    def run(self):
         measurements = []
         timestamps = []
 
@@ -42,6 +42,6 @@ class Keithley:
         plt.show()
 
 
-    def close_keithley(self):
+    def close(self):
         # Close the connection
         self.keithley.close()
