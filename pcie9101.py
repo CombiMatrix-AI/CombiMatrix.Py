@@ -14,27 +14,8 @@ class Adlink:
             exit()
         print("Register card successfully")
 
-    def set_voltage(self):
-        self.dask.AO_relay_EN(self.var_card, 1)
-
-        print("Start AO")
-
-        channel = 0 # 0 or 1
-        voltage = 1.4 # -10 to 10
-
-        err = self.dask.AO_VWriteChannel(self.var_card, channel, voltage)
-        if (err < 0):
-            print(f"AO_VWriteChannel Error: %d\n", err)
-            self.exit_clear(self.var_card)
-
-    def end_voltage(self):
-        access_cnt = list()
-        self.dask.AO_AsyncClear(self.var_card, access_cnt, 0)
-        self.dask.Release_Card(self.var_card)
-        print("Release card successfully")
-
     def exit_clear(self):
-        if (self.var_card >= 0):
+        if self.var_card >= 0:
             self.dask.Release_Card(self.var_card)
 
         print("card release")

@@ -21,10 +21,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.open_button.setGeometry(160, 50, 100, 30)
         self.open_button.clicked.connect(self.open_file_dialog)
 
-        self.init_keithley_button = QtWidgets.QPushButton("Zero Keithley", self)  # New button
-        self.init_keithley_button.setGeometry(270, 50, 100, 30)  # Positioning the button
-        self.init_keithley_button.clicked.connect(lambda: keithley.zero())
-
         self.start_button = QtWidgets.QPushButton("Start", self)  # New start button
         self.start_button.setGeometry(380, 50, 100, 30)  # Positioning the button
         self.start_button.clicked.connect(self.start)
@@ -52,8 +48,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # TODO: pls fix my horrible layout
         layout.addWidget(self.setup_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.open_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.init_keithley_button, 0,
-                         QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)  # Adding the button to the layout
         layout.addWidget(self.start_button, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)  # Adding the start button to the layout
         layout.addWidget(self.current_well_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
@@ -94,8 +88,4 @@ class MainWindow(QtWidgets.QMainWindow):
 
         adlink.set_chip_map(1, chipmap)
 
-        adlink.set_voltage()
 
-        keithley.zero()
-        keithley.run()
-        keithley.close()
