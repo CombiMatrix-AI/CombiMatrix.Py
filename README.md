@@ -12,8 +12,9 @@ Run app.py and watch the magic happen
 
 ### Current includes
 pyvisa
-pyvisa-py
+pyvisa-py (basically dont forget to get pyvisa-py as well as everything else)
 everything else
+YOU ALSO NEED PCI-Dask64.dll ON THE COMPUTER!!!!!!!!!!
 
 ### TODO
 - create package to be distributed

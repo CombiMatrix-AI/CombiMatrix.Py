@@ -1,16 +1,9 @@
 [Voltage Profile]   # Description comes from file name
 
-[DAC Channel 0]
 Type = Flat         # Flat, Pulse, Ramp, Sine (Exp, Log maybe?)
 vA = 1.2            # Sine starts between vA and vB
 vB = 0              # Ramp, Pulse, Sine Only
 Duration = 30
-Period =            # Pulse, Sine Only
+Period = 0          # Pulse, Sine Only
 
-
-[DAC Channel 1]
-Type = Flat         # Flat, Pulse, Ramp, Sine
-vA = 1.2            # Sine starts between vA and vB
-vB = 0              # Ramp, Pulse, Sine Only
-Duration = 30
-Period =            # Pulse, Sine Only
+# We now have one vcfg file for each channel
