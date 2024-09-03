@@ -2,11 +2,14 @@ from PyQt6 import QtWidgets
 import random
 
 from view.gridwidget import GridWidget
-from init import adlink
+#from init import adlink
 
 class SetupWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("Setup Window")
+        self.resize(800, 600)
+
         self.tab_widget = QtWidgets.QTabWidget(self)
         self.tab_widget.addTab(QtWidgets.QWidget(), "Block Definitions")
         self.tab_widget.addTab(QtWidgets.QWidget(), "Block List")

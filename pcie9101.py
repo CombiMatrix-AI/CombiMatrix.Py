@@ -19,31 +19,17 @@ class Adlink:
 
         print("Start AO")
 
-        stopped = list()
-        stopped.append(False)
+        channel = 0 # 0 or 1
+        voltage = 1.4 # -10 to 10
 
+        err = self.dask.AO_VWriteChannel(self.var_card, channel, voltage)
+        if (err < 0):
+            print(f"AO_VWriteChannel Error: %d\n", err)
+            self.exit_clear(self.var_card)
+
+    def end_voltage(self):
         access_cnt = list()
-
-        while (True):
-
-            channel = 0 # 0 or 1
-            voltage = 0 # -10 to 10
-
-            err = self.dask.AO_VWriteChannel(self.var_card, channel, voltage)
-            if (err < 0):
-                print(f"AO_VWriteChannel Error: %d\n", err)
-                self.exit_clear(self.var_card)
-
-            text = input("\n (C)ontinue?")
-            if text != "C" and text != "c":
-                break
-
-        if (stopped):
-            print(f"\nAO Update Done...\n")
-        else:
-            print(f"\nAO will be stopped...\n")
-
-        var_ret = self.dask.AO_AsyncClear(self.var_card, access_cnt, 0)
+        self.dask.AO_AsyncClear(self.var_card, access_cnt, 0)
         self.dask.Release_Card(self.var_card)
         print("Release card successfully")
 
@@ -58,6 +44,11 @@ class Adlink:
             for row in range(64):
                 value = chipmap[16 * row + column]
                 status = self.set_chip_state(channel, row, column, value)
+
+                # Cause the old chips have problems double check setting was successful
+                while self.get_chip_state(channel, row, column) != value:
+                    status = self.set_chip_state(channel, row, column, value)
+
         return status
 
     def set_chip_state(self, channel, row, column, value):
@@ -74,14 +65,14 @@ class Adlink:
         dataToWrite = address | value | wr | channel
 
         status = self.dask.DO_WritePort(self.var_card, 0, dataToWrite)
-        self.wait(0.00002)
+        self.wait(0.00001)
 
         wr = 0x1
         wr <<= 12
         dataToWrite = address | value | wr | channel
 
         status = self.dask.DO_WritePort(self.var_card, 0, dataToWrite)
-        self.wait(0.00002)
+        self.wait(0.00001)
 
         return status
 
@@ -106,9 +97,9 @@ class Adlink:
         dataToWrite = address | wr | channel
 
         status = self.dask.DO_WritePort(self.var_card, 0, dataToWrite)
-        self.wait(0.00002)
+        self.wait(0.00001)
         status = self.dask.DI_ReadPort(self.var_card, 0, dataRead)
-        self.wait(0.00002)
+        self.wait(0.00001)
 
         out = dataRead[0] >> 14
 
@@ -119,3 +110,4 @@ class Adlink:
         end = now + duration
         while now < end:
             now = get_now()
+

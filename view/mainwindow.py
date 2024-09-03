@@ -4,11 +4,12 @@ from qt_material import apply_stylesheet
 
 from view.gridwidget import GridWidget
 from view.setupwindow import SetupWindow
-from init import *
+#from init import *
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("CombiMatrixAI")
         self.resize(800, 600)  # Bigger is better!!
         self.setup_window = SetupWindow()
 

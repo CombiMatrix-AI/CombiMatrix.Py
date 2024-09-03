@@ -1,0 +1,10 @@
+[Block]
+Description = "Block8"
+Filename = "c:\\Users\\combi\\Downloads\\blocks\\Block8.block"
+Comments = ""
+Number rows = 10
+Number columns = 4
+Start row = 45
+Start column = 13
+Definition = "2222222220000200002000022222222222222222"
+

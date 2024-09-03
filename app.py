@@ -28,5 +28,7 @@ if __name__ == "__main__":
     # Now, redirect standard output to our text widget
     sys.stdout = output_window
 
+
+
     app.exec()
 
