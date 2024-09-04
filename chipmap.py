@@ -1,5 +1,3 @@
-
-
 class ChipMap:
     def __init__(self):
         self.chipmap = [[0] * 16 for _ in range(64)]
@@ -8,6 +6,16 @@ class ChipMap:
         self.chipmap = [[0] * 16 for _ in range(64)]
 
         return self.chipmap
+
+    def set_square(self, row, col, value):
+        self.chipmap[row][col] = value
+
+        return self.chipmap
+
+    def get_square(self, row, col):
+        value = self.chipmap[row][col]
+
+        return value
 
     def from_block(self, block):
         num_rows = int(block.num_rows)

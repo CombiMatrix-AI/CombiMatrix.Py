@@ -10,6 +10,7 @@ The script uses parameters which are provided below.
 import os
 import sys
 import time
+from dataclasses import dataclass
 
 import inc.kbio.kbio_types as KBIO
 from inc.kbio.kbio_api import KBIO_api
@@ -29,27 +30,47 @@ verbosity = 1
 address = "USB0" # ethernet ex. "10.100.19.1"
 channel = 0
 
-binary_path = os.path.join(os.path.dirname(__file__), "lib", "kbio")
-DLL_path = os.path.join(binary_path, "EClib64.dll")
+DLL_path = os.path.join(os.path.dirname(__file__), "lib", "kbio", "EClib64.dll")
 
 force_load_firmware = True
 
 # OCV parameter values
 cv_tech_file = "cv.ecc"
 
-duration = 10.0  # seconds
-record_dt = 0.1  # seconds
-e_range = "E_RANGE_10V"
+scan_number = 0
+record_de = 0.001
+average_de = False
+n_cycles = 10
+begin_I = 0.001
+end_I = 0.002
 
-# dictionary of OCV parameters (non exhaustive)
-
-OCV_parms = {
-    "duration": ECC_parm("Rest_time_T", float),
-    "record_dt": ECC_parm("Record_every_dT", float),
-    "record_dE": ECC_parm("Record_every_dE", float),
-    "E_range": ECC_parm("E_Range", int),
-    "timebase": ECC_parm("tb", int),
+CV_parms = {
+    "vs_initial": ECC_parm("vs_initial", bool),
+    "Voltage_step": ECC_parm("Voltage_step", float),
+    "Scan_Rate": ECC_parm("Scan_Rate", float),
+    "Scan_number": ECC_parm("Scan_number", int),
+    "Record_every_dE": ECC_parm("Record_every_dE", float),
+    "Average_over_dE": ECC_parm("Average_over_dE", bool),
+    "N_Cycles": ECC_parm("N_Cycles", int),
+    "Begin_measuring_I": ECC_parm("Begin_measuring_I", float),
+    "End_measuring_I": ECC_parm("End_measuring_I", float),
 }
+
+@dataclass
+class CurrentStep:
+    vs_init: bool
+    v_step: float
+    scan_rate: float
+
+
+# list of step parameters
+steps = [
+    CurrentStep(False, 0.001, 2),  # 1mA during 2s
+    CurrentStep(False, 0.002, 1),  # 2mA during 1s
+    CurrentStep(False, 0.0005, 3),  # 0.5mA delta during 3s
+    CurrentStep(False, 0.0005, 3),  # 0.5mA delta during 3s
+    CurrentStep(False, 0.0005, 3),  # 0.5mA delta during 3s
+]
 
 def newline():
     print()
@@ -114,17 +135,28 @@ try:
         print("> kernel must be loaded in order to run the experiment")
         sys.exit(-1)
 
-
-    tech_file = cv_tech_file
-
     # BL_Define<xxx>Parameter
-    p_duration = make_ecc_parm(api, OCV_parms["duration"], duration)
-    p_record = make_ecc_parm(api, OCV_parms["record_dt"], record_dt)
-    p_erange = make_ecc_parm(api, OCV_parms["E_range"], KBIO.E_RANGE[e_range].value)
-    ecc_parms = make_ecc_parms(api, p_duration, p_record, p_erange)
+    p_steps = list()
+
+    for idx, step in enumerate(steps):
+        parm = make_ecc_parm(api, CV_parms["vs_initial"], step.vs_init, idx)
+        p_steps.append(parm)
+        parm = make_ecc_parm(api, CV_parms["Voltage_step"], step.v_step, idx)
+        p_steps.append(parm)
+        parm = make_ecc_parm(api, CV_parms["Scan_Rate"], step.scan_rate, idx)
+        p_steps.append(parm)
+
+    p_scan_num = make_ecc_parm(api, CV_parms["Scan_number"], scan_number)
+    p_record = make_ecc_parm(api, CV_parms["Record_every_dE"], record_de)
+    p_average = make_ecc_parm(api, CV_parms["Average_over_dE"], average_de)
+    p_cycles = make_ecc_parm(api, CV_parms["N_Cycles"], n_cycles)
+    p_begin = make_ecc_parm(api, CV_parms["Begin_measuring_I"], begin_I)
+    p_end = make_ecc_parm(api, CV_parms["End_measuring_I"], end_I)
+    ecc_parms = make_ecc_parms(api, *p_steps, p_scan_num,
+                               p_record, p_average, p_cycles, p_begin, p_end)
 
     # BL_LoadTechnique
-    api.LoadTechnique(id_, channel, tech_file, ecc_parms, first=True, last=True, display=(verbosity > 1))
+    api.LoadTechnique(id_, channel, cv_tech_file, ecc_parms, first=True, last=True, display=(verbosity > 1))
 
     # BL_StartChannel
     api.StartChannel(id_, channel)

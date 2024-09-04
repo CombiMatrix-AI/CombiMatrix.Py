@@ -23,7 +23,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_button.clicked.connect(self.setup_window.show)
         self.grid_widget = GridWidget()
 
-        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.001", self)
+        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.1", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
         self.theme_label = QtWidgets.QLabel("Theme:", self)
@@ -43,15 +43,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
 
+        # Add an exit button
+        self.exit_button = QtWidgets.QPushButton("Exit", self)
+        self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
+
         layout = QtWidgets.QHBoxLayout()
 
-        # TODO: pls fix my horrible layout
+                # TODO: pls fix my horrible layout
         layout.addWidget(self.setup_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.chip_test_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.exit_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.blocks_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.blocks_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.chip_test_button, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+
         layout.addWidget(self.grid_widget, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout.addWidget(self.version_label, 0,
