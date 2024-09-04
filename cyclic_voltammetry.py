@@ -1,18 +1,8 @@
-""" Bio-Logic OEM package python API.
-
-Script shown as an example of how to run an experiment with a Biologic instrument
-using the EC-Lab OEM Package library.
-
-The script uses parameters which are provided below.
-
-"""
-
 import os
 import sys
 import time
 from dataclasses import dataclass
 
-import inc.kbio.kbio_types as KBIO
 from inc.kbio.kbio_api import KBIO_api
 from inc.kbio.kbio_tech import ECC_parm
 from inc.kbio.kbio_tech import get_experiment_data

@@ -7,10 +7,10 @@ from view.outputlog import OutputWindow
 from view.gridwidget import GridWidget
 from view.setupwindow import SetupWindow
 import block
-# import chipcontrol
+import chipcontrol
 import chipmap
 
-# adlink = chipcontrol.Adlink()
+adlink = chipcontrol.Adlink()
 chipmap = chipmap.ChipMap()
 
 class MainWindow(QtWidgets.QMainWindow):
