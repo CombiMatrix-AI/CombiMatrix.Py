@@ -3,6 +3,7 @@
 ######################################################################################
 
 import time
+import random
 
 import inc.adlink.dask91xx as dask91xx
 
@@ -92,4 +93,38 @@ class Adlink:
         end = now + duration
         while now < end:
             now = get_now()
+
+    def chip_test(self, channel):
+        for i in range(7):
+            if i == 0:
+                chipmap_in = [[0] * 16 for _ in range(64)]
+            elif i == 1:
+                chipmap_in = [[1] * 16 for _ in range(64)]
+            elif i == 2:
+                chipmap_in = [[2] * 16 for _ in range(64)]
+            elif i == 3:
+                chipmap_in = [[3] * 16 for _ in range(64)]
+            elif i == 4:
+                chipmap_in = [[1 if j % 2 == 0 else 2 for j in range(16)] for _ in range(64)]
+            elif i == 5:
+                chipmap_in = [[2 if j % 2 == 0 else 3 for j in range(16)] for _ in range(64)]
+            elif i == 6:
+                chipmap_in = [[random.randint(0, 3)] * 16 for _ in range(64)]
+
+            chipmap_out = [[0] * 16 for _ in range(64)]
+
+            self.set_chip_map(channel, chipmap_in)
+            self.get_chip_map(channel, chipmap_out)
+
+            if chipmap_in == chipmap_out:
+                print(f"Test {i} Passed")
+            else:
+                print(f"Test {i} Failed")
+                differences = [(l, chipmap_in[l], chipmap_out[l]) for l in range(len(chipmap_in)) if
+                               chipmap_in[l] != chipmap_out[l]]
+                # Print differences
+                for index, value1, value2 in differences:
+                    print(f"Index {index}: list1 has {value1}, list2 has {value2}")
+
+
 

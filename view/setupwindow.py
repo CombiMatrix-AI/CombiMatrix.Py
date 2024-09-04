@@ -1,10 +1,11 @@
 import os
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PyQt6 import QtWidgets, QtCore
 
 from chipmap import ChipMap
 
 
 class SetupWindow(QtWidgets.QMainWindow):
+    block_created = QtCore.pyqtSignal(str)
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Setup Window")
@@ -80,6 +81,7 @@ class SetupWindow(QtWidgets.QMainWindow):
 
         self.block_chipmap.clear()
         self.grid_widget.clear()
+        self.block_created.emit("New Block Created")
 
 
     class ClickableGridWidget(QtWidgets.QWidget):

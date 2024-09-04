@@ -4,17 +4,12 @@ Run app.py and watch the magic happen
 
 ## OUTLINE
 1. Start up app ui
-2. Initialize and start up keithley
 3. Load voltage and chip map onto chip
 4. initialize robot, move into position
-5. Run voltage and keithley at same time
+5. Run ec lab at same time
 6. output results
 
-### Current includes
-pyvisa
-pyvisa-py (basically dont forget to get pyvisa-py as well as everything else)
-everything else
-YOU ALSO NEED PCI-Dask64.dll ON THE COMPUTER!!!!!!!!!!
+***dont forget to include pyvisa-py
 
 ### TODO
 - create package to be distributed
