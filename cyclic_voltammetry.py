@@ -11,15 +11,14 @@ import os
 import sys
 import time
 
-import kbio.kbio_types as KBIO
-from kbio.c_utils import c_is_64b
-from kbio.kbio_api import KBIO_api
-from kbio.kbio_tech import ECC_parm
-from kbio.kbio_tech import get_experiment_data
-from kbio.kbio_tech import get_info_data
-from kbio.kbio_tech import make_ecc_parm
-from kbio.kbio_tech import make_ecc_parms
-from kbio.utils import exception_brief
+import inc.kbio.kbio_types as KBIO
+from inc.kbio.kbio_api import KBIO_api
+from inc.kbio.kbio_tech import ECC_parm
+from inc.kbio.kbio_tech import get_experiment_data
+from inc.kbio.kbio_tech import get_info_data
+from inc.kbio.kbio_tech import make_ecc_parm
+from inc.kbio.kbio_tech import make_ecc_parms
+from inc.kbio.utils import exception_brief
 
 # ------------------------------------------------------------------------------#
 
@@ -27,18 +26,16 @@ from kbio.utils import exception_brief
 
 verbosity = 1
 
-# address = "USB0"
-address = "10.100.19.1"
-channel = 1
+address = "USB0" # ethernet ex. "10.100.19.1"
+channel = 0
 
-binary_path = "C:/EC-Lab Development Package/lib"
+binary_path = os.path.join(os.path.dirname(__file__), "lib", "kbio")
+DLL_path = os.path.join(binary_path, "EClib64.dll")
 
 force_load_firmware = True
 
 # OCV parameter values
-ocv3_tech_file = "ocv.ecc"
-ocv4_tech_file = "ocv4.ecc"
-ocv5_tech_file = "ocv5.ecc"
+cv_tech_file = "cv.ecc"
 
 duration = 10.0  # seconds
 record_dt = 0.1  # seconds
@@ -54,25 +51,8 @@ OCV_parms = {
     "timebase": ECC_parm("tb", int),
 }
 
-# ==============================================================================#
-
-# helper functions
-
-
 def newline():
     print()
-
-
-# determine library file according to Python version (32b/64b)
-
-if c_is_64b:
-    DLL_file = "EClib64.dll"
-else:
-    DLL_file = "EClib.dll"
-
-DLL_path = f"{binary_path}{os.sep}{DLL_file}"
-
-# ==============================================================================#
 
 """
 
@@ -112,19 +92,8 @@ try:
 
     # based on board_type, determine firmware filenames
     board_type = api.GetChannelBoardType(id_, channel)
-    match board_type:
-        case KBIO.BOARD_TYPE.ESSENTIAL.value:
-            firmware_path = "kernel.bin"
-            fpga_path = "Vmp_ii_0437_a6.xlx"
-        case KBIO.BOARD_TYPE.PREMIUM.value:
-            firmware_path = "kernel4.bin"
-            fpga_path = "vmp_iv_0395_aa.xlx"
-        case KBIO.BOARD_TYPE.DIGICORE.value:
-            firmware_path = "kernel.bin"
-            fpga_path = ""
-        case _:
-            print("> Board type detection failed")
-            sys.exit(-1)
+    firmware_path = "kernel.bin"
+    fpga_path = "Vmp_ii_0437_a6.xlx"
 
     # Load firmware
     print(f"> Loading {firmware_path} ...")
@@ -145,18 +114,8 @@ try:
         print("> kernel must be loaded in order to run the experiment")
         sys.exit(-1)
 
-    # pick the correct ecc file based on the instrument family
-    # pick the correct ecc file based on the instrument family
-    match board_type:
-        case KBIO.BOARD_TYPE.ESSENTIAL.value:
-            tech_file = ocv3_tech_file
-        case KBIO.BOARD_TYPE.PREMIUM.value:
-            tech_file = ocv4_tech_file
-        case KBIO.BOARD_TYPE.DIGICORE.value:
-            tech_file = ocv5_tech_file
-        case _:
-            print("> Board type detection failed")
-            sys.exit(-1)
+
+    tech_file = cv_tech_file
 
     # BL_Define<xxx>Parameter
     p_duration = make_ecc_parm(api, OCV_parms["duration"], duration)
@@ -171,8 +130,8 @@ try:
     api.StartChannel(id_, channel)
 
     # experiment loop
-    csvfile = open("ocv.csv", "w")
-    csvfile.write("t (s),Ewe (V)\n")
+    csvfile = open("cv.csv", "w")
+    csvfile.write("t (s),I (A)\n")
     count = 0
     print("> Reading data ", end="", flush=True)
     while True:
@@ -182,7 +141,7 @@ try:
         print(".", end="", flush=True)
 
         for output in get_experiment_data(api, data, tech_name, board_type):
-            csvfile.write(f"{output['t']},{output['Ewe']}\n")
+            csvfile.write(f"{output['t']},{output['I']}\n")
             csvfile.flush()
             count += 1
 
@@ -193,7 +152,7 @@ try:
 
     csvfile.close()
     print()
-    print(f"> {count} data have been writted into ocv.csv")
+    print(f"> {count} data have been written into cv.csv")
     print("> experiment done")
     newline()
 

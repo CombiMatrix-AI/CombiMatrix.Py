@@ -35,7 +35,7 @@ class Block:
 
     @classmethod
     def from_blocks_folder(cls):
-        blocks_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blocks')
+        blocks_dir = os.path.join(os.path.dirname(__file__), 'blocks')
         blocks = {}
         for filename in os.listdir(blocks_dir):
             if filename.endswith('.block'):

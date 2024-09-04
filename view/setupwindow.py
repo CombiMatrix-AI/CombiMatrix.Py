@@ -2,7 +2,6 @@ from PyQt6 import QtWidgets
 import random
 
 from view.gridwidget import GridWidget
-#from init import adlink
 
 class SetupWindow(QtWidgets.QMainWindow):
     def __init__(self):

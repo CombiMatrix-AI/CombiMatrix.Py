@@ -1,10 +1,6 @@
-
-from collections import defaultdict
-from ctypes import *
+import os
 import platform
-from unittest import defaultTestLoader
-
-
+from ctypes import *
 
 
 class Dask91xxLib:
@@ -219,14 +215,17 @@ class Dask91xxLib:
         self.MW_DLL_FILE_NAME_X86_LINUX = "libAdMWCore.so"
         self.strPlatform = platform.architecture()[0]
         self.strOS = platform.architecture()[1]
-        
-        if "Win" in self.strOS:
+
+        # Construct the path to the lib folder
+        lib_folder = os.path.join(os.path.dirname(__file__), "lib", "adlink")
+
+        if "Windows" in self.strOS:
             if '32' in self.strPlatform:
                 print("System is Windows 32Bits")
-                self.libHandle = windll.LoadLibrary(self.MW_DLL_FILE_NAME_X86_WIN)
+                self.libHandle = windll.LoadLibrary(os.path.join(lib_folder, self.MW_DLL_FILE_NAME_X86_WIN))
             else:
                 print("System is Windows 64Bits")
-                self.libHandle = windll.LoadLibrary(self.MW_DLL_FILE_NAME_X64_WIN)
+                self.libHandle = windll.LoadLibrary(os.path.join(lib_folder, self.MW_DLL_FILE_NAME_X64_WIN))
         else:
             if '32' in self.strPlatform:
                 print("System is Linux 32Bits")
