@@ -3,7 +3,8 @@
 ######################################################################################
 
 import time
-import dask91xx
+
+import inc.adlink.dask91xx as dask91xx
 
 class Adlink:
     def __init__(self):

@@ -31,15 +31,15 @@ from ctypes import c_int32
 from ctypes import c_uint8
 from ctypes import c_uint32
 
-import kbio.kbio_types as KBIO
-from kbio.c_utils import c_buffer
-from kbio.c_utils import c_double_p
-from kbio.c_utils import c_float_p
-from kbio.c_utils import c_int32_p
-from kbio.c_utils import c_uint32_p
-from kbio.utils import exception_brief
-from kbio.utils import pp_plural
-from kbio.utils import warn_diff
+import inc.kbio.kbio_types as KBIO
+from inc.kbio.c_utils import c_buffer
+from inc.kbio.c_utils import c_double_p
+from inc.kbio.c_utils import c_float_p
+from inc.kbio.c_utils import c_int32_p
+from inc.kbio.c_utils import c_uint32_p
+from inc.kbio.utils import exception_brief
+from inc.kbio.utils import pp_plural
+from inc.kbio.utils import warn_diff
 
 # ==============================================================================#
 

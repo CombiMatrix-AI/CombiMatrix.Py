@@ -22,3 +22,8 @@ class GridWidget(QtWidgets.QWidget):
     def set_square_color(self, row, col, color):
         if 0 <= row < len(self.squares) and 0 <= col < len(self.squares[row]):
             self.squares[row][col].setStyleSheet(f"background-color: {color};")
+
+    def clear(self):
+        for row in range(64):
+            for column in range(16):
+                self.set_square_color(row, column, 'grey')

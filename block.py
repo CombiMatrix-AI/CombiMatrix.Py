@@ -1,5 +1,6 @@
 import os
 
+
 class Block:
     def __init__(self, block_id, num_rows, num_cols, start_row, start_column, definition):
         self.block_id = block_id
@@ -35,19 +36,17 @@ class Block:
     @classmethod
     def from_blocks_folder(cls):
         blocks_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blocks')
-        blocks = []
+        blocks = {}
         for filename in os.listdir(blocks_dir):
             if filename.endswith('.block'):
                 file_path = os.path.join(blocks_dir, filename)
                 try:
                     block = cls.from_file(file_path)
-                    blocks.append(block)
+                    blocks[block.block_id] = block
                 except ValueError as ve:
                     print(f"Skipping file {filename}: {ve}")
         return blocks
-        
+
     def __repr__(self):
         return (f"Block(block_id={self.block_id}, num_rows={self.num_rows}, num_cols={self.num_cols}, "
                 f"start_row={self.start_row}, start_column={self.start_column}, definition={self.definition})")
-
-

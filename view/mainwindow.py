@@ -4,7 +4,9 @@ from qt_material import apply_stylesheet
 
 from view.gridwidget import GridWidget
 from view.setupwindow import SetupWindow
-#from init import *
+
+
+from init import *
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -43,6 +45,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.current_well_textbox = QtWidgets.QLineEdit(self)
         self.current_well_textbox.setReadOnly(True)
 
+        self.blocks_label = QtWidgets.QLabel("Load Block:", self)
+        self.blocks_dropdown = QtWidgets.QComboBox(self)
+        self.blocks_dropdown.addItems(list(blocks.keys()))
+        self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks_dropdown.currentText()))
+
         layout = QtWidgets.QHBoxLayout()
 
         # TODO: pls fix my horrible layout
@@ -54,6 +61,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.current_well_textbox, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.blocks_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.blocks_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.grid_widget, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout.addWidget(self.version_label, 0,
@@ -84,8 +93,22 @@ class MainWindow(QtWidgets.QMainWindow):
     def start(self):
         # Add the main function logic here
         print("Main function started")
-        chipmap = [0] * (984 - 160) + [2] * 40 + [0] * 160
 
-        adlink.set_chip_map(1, chipmap)
 
+    def load_block(self, block):
+        # Logic for loading the block
+        print(f"Block loaded: {block}")
+        chipmap.clear()
+        self.grid_widget.clear()
+
+        chipmap.from_block(blocks[block])
+
+        output = chipmap.output()
+
+        for row in range(64):
+            for column in range(16):
+                if output[row][column] == 2:
+                    self.grid_widget.set_square_color(row, column, 'yellow')
+
+        #adlink.set_chip_map(1, chipmap)
 
