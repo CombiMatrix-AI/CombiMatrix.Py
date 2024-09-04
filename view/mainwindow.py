@@ -1,4 +1,6 @@
 import configparser
+import random
+
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 
@@ -7,6 +9,7 @@ from view.setupwindow import SetupWindow
 
 
 from init import *
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -18,15 +21,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.setGeometry(50, 50, 100, 30)
         self.setup_button.clicked.connect(self.setup_window.show)
-
-        self.open_button = QtWidgets.QPushButton("Open File", self)
-        self.open_button.setGeometry(160, 50, 100, 30)
-        self.open_button.clicked.connect(self.open_file_dialog)
-
-        self.start_button = QtWidgets.QPushButton("Start", self)  # New start button
-        self.start_button.setGeometry(380, 50, 100, 30)  # Positioning the button
-        self.start_button.clicked.connect(self.start)
-
         self.grid_widget = GridWidget()
 
         self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.001", self)
@@ -41,28 +35,23 @@ class MainWindow(QtWidgets.QMainWindow):
                                       'light_purple.xml', 'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
         self.theme_dropdown.activated.connect(lambda: self.change_theme(self.theme_dropdown.currentText()))
 
-        self.current_well_label = QtWidgets.QLabel("Current Well:", self)
-        self.current_well_textbox = QtWidgets.QLineEdit(self)
-        self.current_well_textbox.setReadOnly(True)
-
         self.blocks_label = QtWidgets.QLabel("Load Block:", self)
         self.blocks_dropdown = QtWidgets.QComboBox(self)
         self.blocks_dropdown.addItems(list(blocks.keys()))
         self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks_dropdown.currentText()))
 
+        self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
+        self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
+
         layout = QtWidgets.QHBoxLayout()
 
         # TODO: pls fix my horrible layout
         layout.addWidget(self.setup_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.open_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.start_button, 0,
-                         QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)  # Adding the start button to the layout
-        layout.addWidget(self.current_well_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.current_well_textbox, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.blocks_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.blocks_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.chip_test_button, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.grid_widget, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout.addWidget(self.version_label, 0,
@@ -81,19 +70,37 @@ class MainWindow(QtWidgets.QMainWindow):
             config.write(configfile)
         apply_stylesheet(QtWidgets.QApplication.instance(), theme=theme)
 
-    def open_file_dialog(self):
-        # TODO: AttributeError: type object 'QFileDialog' has no attribute 'Options'
-        print("test")
-        # options = QtWidgets.QFileDialog.options()
-        # file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open File", "",
-        #                                                     "All Files (*);;Python Files (*.py)", options=options)
-        # if file_name:
-        #    print(f"File chosen: {file_name}")
+    def chip_test(self, channel):
+        for i in range(7):
+            if i == 0:
+                chipmap_in = [[0] * 16 for _ in range(64)]
+            elif i == 1:
+                chipmap_in = [[1] * 16 for _ in range(64)]
+            elif i == 2:
+                chipmap_in = [[2] * 16 for _ in range(64)]
+            elif i == 3:
+                chipmap_in = [[3] * 16 for _ in range(64)]
+            elif i == 4:
+                chipmap_in = [[1 if j % 2 == 0 else 2 for j in range(16)] for _ in range(64)]
+            elif i == 5:
+                chipmap_in = [[2 if j % 2 == 0 else 3 for j in range(16)] for _ in range(64)]
+            elif i == 6:
+                chipmap_in = [[random.randint(0, 3)] * 16 for _ in range(64)]
 
-    def start(self):
-        # Add the main function logic here
-        print("Main function started")
+            chipmap_out = [[0] * 16 for _ in range(64)]
 
+            adlink.set_chip_map(channel, chipmap_in)
+            adlink.get_chip_map(channel, chipmap_out)
+
+            if chipmap_in == chipmap_out:
+                print(f"Test {i} Passed")
+            else:
+                print(f"Test {i} Failed")
+                differences = [(l, chipmap_in[l], chipmap_out[l]) for l in range(len(chipmap_in)) if
+                               chipmap_in[l] != chipmap_out[l]]
+                # Print differences
+                for index, value1, value2 in differences:
+                    print(f"Index {index}: list1 has {value1}, list2 has {value2}")
 
     def load_block(self, block):
         # Logic for loading the block
@@ -110,5 +117,4 @@ class MainWindow(QtWidgets.QMainWindow):
                 if output[row][column] == 2:
                     self.grid_widget.set_square_color(row, column, 'yellow')
 
-        #adlink.set_chip_map(1, chipmap)
-
+        adlink.set_chip_map(1, output)

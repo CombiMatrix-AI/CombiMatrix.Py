@@ -24,7 +24,7 @@ class Adlink:
     def set_chip_map(self, channel, chipmap):
         for column in range(16):
             for row in range(64):
-                value = chipmap[16 * row + column]
+                value = chipmap[row][column]
                 status = self.set_chip_state(channel, row, column, value)
 
                 # Cause the old chips have problems double check setting was successful
@@ -61,7 +61,7 @@ class Adlink:
     def get_chip_map(self, channel, chipmap):
         for column in range(16):
             for row in range(64):
-                chipmap[16 * row + column] = self.get_chip_state(channel, row, column)
+                chipmap[row][column] = self.get_chip_state(channel, row, column)
 
         return chipmap
 
