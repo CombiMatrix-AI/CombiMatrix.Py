@@ -217,7 +217,7 @@ class Dask91xxLib:
         self.strOS = platform.architecture()[1]
 
         # Construct the path to the lib folder
-        lib_folder = os.path.join(os.path.dirname(__file__), "lib", "adlink")
+        lib_folder = os.path.join(os.path.dirname(__file__), "..", "..", "lib", "adlink")
 
         if "Windows" in self.strOS:
             if '32' in self.strPlatform:

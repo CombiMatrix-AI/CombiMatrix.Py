@@ -13,6 +13,7 @@ import chipmap
 adlink = chipcontrol.Adlink()
 chipmap = chipmap.ChipMap()
 
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -20,6 +21,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(800, 600)  # Bigger is better!!
         self.setup_window = SetupWindow()
         self.blocks = block.Block.from_blocks_folder()
+        self.curr_block = None
 
         self.setup_window.block_created.connect(self.update_blocks)
 
@@ -45,6 +47,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
         self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks_dropdown.currentText()))
 
+        self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
+        self.tile_block_button.clicked.connect(self.tile_block)
+
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: adlink.chip_test(1))
 
@@ -61,6 +66,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.theme_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.blocks_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.blocks_dropdown, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.tile_block_button, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
 
         layout.addWidget(self.grid_widget, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
@@ -90,6 +96,7 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"Block loaded: {block}")
         chipmap.clear()
         self.grid_widget.clear()
+        self.curr_block = block
 
         chipmap.from_block(self.blocks[block])
 
@@ -101,6 +108,24 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.grid_widget.set_square_color(row, column, 'yellow')
 
         adlink.set_chip_map(1, output)
+
+    def tile_block(self):
+        block = self.curr_block
+        print(f"Block tiled: {block}")
+        chipmap.clear()
+        self.grid_widget.clear()
+
+        chipmap.tile_block(self.blocks[block])
+
+        output = chipmap.output()
+
+        for row in range(64):
+            for column in range(16):
+                if output[row][column] == 2:
+                    self.grid_widget.set_square_color(row, column, 'yellow')
+
+        adlink.set_chip_map(1, output)
+
 
 if __name__ == "__main__":
     # Create a ConfigParser object

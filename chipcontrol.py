@@ -105,11 +105,13 @@ class Adlink:
             elif i == 3:
                 chipmap_in = [[3] * 16 for _ in range(64)]
             elif i == 4:
-                chipmap_in = [[1 if j % 2 == 0 else 2 for j in range(16)] for _ in range(64)]
+                chipmap_in = [[1 if (r + c) % 2 == 0 else 2 for c in range(16)] for r in range(64)]
             elif i == 5:
-                chipmap_in = [[2 if j % 2 == 0 else 3 for j in range(16)] for _ in range(64)]
+                chipmap_in = [[2 if (r + c) % 2 == 0 else 3 for c in range(16)] for r in range(64)]
             elif i == 6:
-                chipmap_in = [[random.randint(0, 3)] * 16 for _ in range(64)]
+                chipmap_in = [[random.randint(0, 3) for _ in range(16)] for _ in range(64)]
+            else: # Handle out of bounds cases
+                break
 
             chipmap_out = [[0] * 16 for _ in range(64)]
 
@@ -120,11 +122,12 @@ class Adlink:
                 print(f"Test {i} Passed")
             else:
                 print(f"Test {i} Failed")
-                differences = [(l, chipmap_in[l], chipmap_out[l]) for l in range(len(chipmap_in)) if
-                               chipmap_in[l] != chipmap_out[l]]
+                differences = [
+                    (r, c, chipmap_in[r][c], chipmap_out[r][c])
+                    for r in range(len(chipmap_in))
+                    for c in range(len(chipmap_in[r]))
+                    if chipmap_in[r][c] != chipmap_out[r][c]
+                ]
                 # Print differences
-                for index, value1, value2 in differences:
-                    print(f"Index {index}: list1 has {value1}, list2 has {value2}")
-
-
-
+                for row, col, value1, value2 in differences:
+                    print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
