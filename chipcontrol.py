@@ -115,7 +115,10 @@ class Adlink:
 
             chipmap_out = [[0] * 16 for _ in range(64)]
 
-            self.set_chip_map(channel, chipmap_in)
+            try:
+                self.set_chip_map(channel, chipmap_in)
+            except:
+                print(f"No chip found on channel {channel} or chip is dead")
             self.get_chip_map(channel, chipmap_out)
 
             if chipmap_in == chipmap_out:

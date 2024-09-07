@@ -7,10 +7,10 @@ from view.outputlog import OutputWindow
 from view.gridwidget import GridWidget
 from view.setupwindow import SetupWindow
 import block
-import chipcontrol
+#import chipcontrol
 import chipmap
 
-adlink = chipcontrol.Adlink()
+#adlink = chipcontrol.Adlink()
 chipmap = chipmap.ChipMap()
 
 
@@ -50,6 +50,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
         self.tile_block_button.clicked.connect(self.tile_block)
 
+        self.update_grid_button = QtWidgets.QPushButton("Update Block View", self)
+        self.update_grid_button.clicked.connect(self.update_grid)
+
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: adlink.chip_test(1))
 
@@ -60,6 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # TODO: pls fix my horrible layout
         layout.addWidget(self.setup_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.update_grid_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.chip_test_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.exit_button, 0, QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
@@ -91,12 +95,33 @@ class MainWindow(QtWidgets.QMainWindow):
             config.write(configfile)
         apply_stylesheet(QtWidgets.QApplication.instance(), theme=theme)
 
+    def update_grid(self):
+        self.grid_widget.clear()
+
+        tempmap = [[0] * 16 for _ in range(64)]
+        adlink.get_chip_map(1, tempmap)
+
+        for row in range(64):
+            for column in range(16):
+                chipmap.set_square(row, column, tempmap[row][column])
+
+        output = chipmap.output()
+
+        for row in range(64):
+            for column in range(16):
+                if output[row][column] == 1:
+                    self.grid_widget.set_square_color(row, column, 'blue')
+                if output[row][column] == 2:
+                    self.grid_widget.set_square_color(row, column, 'yellow')
+                if output[row][column] == 3:
+                    self.grid_widget.set_square_color(row, column, 'green')
+
     def load_block(self, block):
         # Logic for loading the block
         print(f"Block loaded: {block}")
         chipmap.clear()
         self.grid_widget.clear()
-        self.curr_block = block
+        self.curr_block = self.blocks[block]
 
         chipmap.from_block(self.blocks[block])
 
@@ -107,16 +132,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 if output[row][column] == 2:
                     self.grid_widget.set_square_color(row, column, 'yellow')
 
-        adlink.set_chip_map(1, output)
+        #adlink.set_chip_map(1, output)
 
     def tile_block(self):
-        block = self.curr_block
-        print(f"Block tiled: {block}")
+        if self.curr_block is None:
+            return
+        old_block = self.curr_block
+        print(f"Block tiled: {old_block}")
         chipmap.clear()
         self.grid_widget.clear()
 
-        chipmap.tile_block(self.blocks[block])
+        new_start_row, new_start_column = chipmap.tile_block(old_block)
 
+        self.curr_block = block.Block(old_block.block_id, old_block.num_rows,
+                                      old_block.num_cols, new_start_row, new_start_column, old_block.definition)
         output = chipmap.output()
 
         for row in range(64):
@@ -124,8 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if output[row][column] == 2:
                     self.grid_widget.set_square_color(row, column, 'yellow')
 
-        adlink.set_chip_map(1, output)
-
+        #adlink.set_chip_map(1, output)
 
 if __name__ == "__main__":
     # Create a ConfigParser object

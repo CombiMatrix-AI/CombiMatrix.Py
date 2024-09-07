@@ -11,10 +11,6 @@ from inc.kbio.kbio_tech import make_ecc_parm
 from inc.kbio.kbio_tech import make_ecc_parms
 from inc.kbio.utils import exception_brief
 
-# ------------------------------------------------------------------------------#
-
-# Test parameters, to be adjusted
-
 verbosity = 1
 
 address = "USB0" # ethernet ex. "10.100.19.1"
@@ -186,5 +182,3 @@ except KeyboardInterrupt:
 
 except Exception as e:
     print(exception_brief(e, verbosity >= 1))
-
-# ==============================================================================#
