@@ -1,8 +1,6 @@
 import os
 from PyQt6 import QtWidgets, QtCore
 
-from chipmap import ChipMap
-
 
 class SetupWindow(QtWidgets.QMainWindow):
     block_created = QtCore.pyqtSignal(str)
@@ -16,7 +14,7 @@ class SetupWindow(QtWidgets.QMainWindow):
         create_block_tab = QtWidgets.QWidget()
         create_block_layout = QtWidgets.QVBoxLayout(create_block_tab)
 
-        self.block_chipmap = ChipMap()
+        self.block_chipmap = [[0] * 16 for _ in range(64)]
         self.grid_widget = self.ClickableGridWidget(self.block_chipmap)
         create_block_layout.addWidget(self.grid_widget, 0,
                                       QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)
@@ -35,14 +33,12 @@ class SetupWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.tab_widget)
 
     def create_block(self):
-        output = self.block_chipmap.output()
-
         first_row, first_col = -1, -1
         last_row, last_col = -1, -1
 
-        for row in range(len(output)):
-            for col in range(len(output[0])):
-                if output[row][col] != 0:
+        for row in range(len(self.block_chipmap)):
+            for col in range(len(self.block_chipmap[0])):
+                if self.block_chipmap[row][col] != 0:
                     if first_row == -1 or row < first_row:
                         first_row = row
                     if first_col == -1 or col < first_col:
@@ -58,7 +54,7 @@ class SetupWindow(QtWidgets.QMainWindow):
         block_definition = ""
         for row in range(first_row, last_row + 1):
             for col in range(first_col, last_col + 1):
-                block_definition += str(output[row][col])
+                block_definition += str(self.block_chipmap[row][col])
 
         block_name = self.block_name_input.text()
 
@@ -79,7 +75,6 @@ class SetupWindow(QtWidgets.QMainWindow):
         with open(os.path.join(blocks_dir, f"{block_name}.block"), "w") as block_file:
             block_file.write(block_file_content)
 
-        self.block_chipmap.clear()
         self.grid_widget.clear()
         self.block_created.emit("New Block Created")
 
@@ -87,7 +82,7 @@ class SetupWindow(QtWidgets.QMainWindow):
     class ClickableGridWidget(QtWidgets.QWidget):
         def __init__(self, block_chipmap, rows=64, columns=16):
             super().__init__()
-            self.block_chipmap = block_chipmap  # Store the reference to ChipMap instance
+            self.block_chipmap = block_chipmap # Bring the chipmap to this scope
             self.setStyleSheet("background-color: black;")  # Set background color to black
             self.grid_layout = QtWidgets.QGridLayout(self)
             self.grid_layout.setSpacing(1)  # Set spacing between squares
@@ -106,16 +101,16 @@ class SetupWindow(QtWidgets.QMainWindow):
                 self.squares.append(row_squares)
 
         def on_square_click(self, row, col):
-            square = self.squares[row][col]
-            if square.styleSheet() == "background-color: grey;":
-                square.setStyleSheet("background-color: yellow;")
-                self.block_chipmap.set_square(row, col, 2)
+            if self.squares[row][col].styleSheet() == "background-color: grey;":
+                self.squares[row][col].setStyleSheet("background-color: yellow;")
+                self.block_chipmap[row][col] = 2
             else:
-                square.setStyleSheet("background-color: grey;")
-                self.block_chipmap.set_square(row, col, 0)
+                self.squares[row][col].setStyleSheet("background-color: grey;")
+                self.block_chipmap[row][col] = 0
 
         def clear(self):
             for row in range(64):
                 for col in range(16):
-                    square = self.squares[row][col]
-                    square.setStyleSheet("background-color: grey;")
+                    self.squares[row][col].setStyleSheet("background-color: grey;")
+                    self.block_chipmap[row][col] = 0
+
