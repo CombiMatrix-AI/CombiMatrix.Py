@@ -39,7 +39,6 @@ class Adlink:
                 while self.get_chip_state(channel, row, column) != value:
                     self.set_chip_state(channel, row, column, value)
 
-
     def set_chip_state(self, channel, row, column, value):
         channel <<= 13
 
@@ -63,8 +62,8 @@ class Adlink:
         self.dask.DO_WritePort(self.var_card, 0, dataToWrite)
         wait(0.00001)
 
-
-    def get_chip_map(self, channel, chipmap):
+    def get_chip_map(self, channel):
+        chipmap = [[0] * 16 for _ in range(64)]
         for column in range(16):
             for row in range(64):
                 chipmap[row][column] = self.get_chip_state(channel, row, column)

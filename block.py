@@ -1,6 +1,5 @@
 import os
 
-
 class Block:
     def __init__(self, block_id, num_rows, num_cols, start_row, start_column, definition):
         self.block_id = block_id

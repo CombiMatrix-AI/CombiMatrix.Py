@@ -1,19 +1,22 @@
 import sys
-
-from PyQt6.QtWidgets import QSpacerItem
-
-from view.outputlog import OutputWindow
-#from adlink import Adlink
 import configparser
 import random
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
+from grbl_streamer import GrblStreamer
 
-import block
-import chipcontrol as chip
+from block import Block
+from adlink import Adlink
+from kbio import KBio
 from view.gridwidget import GridWidget
+from view.outputlog import OutputWindow
 from view.setupwindow import SetupWindow
 
+def grbl_callback(eventstring, *data):
+    args = []
+    for d in data:
+        args.append(str(d))
+    print("GRBL CALLBACK: event={} data={}".format(eventstring.ljust(30), ", ".join(args)))
 
 def change_theme(theme):
     config = configparser.ConfigParser()
@@ -23,27 +26,78 @@ def change_theme(theme):
         config.write(configfile)
     apply_stylesheet(QtWidgets.QApplication.instance(), theme=theme)
 
+def from_block(block, chipmap):
+    num_rows = int(block.num_rows)
+    num_cols = int(block.num_cols)
+    start_row = int(block.start_row)
+    start_col = int(block.start_column)
+    definition = block.definition[1:-1] # remove quotation marks
+
+    for i in range(num_rows):
+        for j in range(num_cols):
+            chipmap[start_row + i][start_col + j] = int(definition[i * num_cols + j])
+
+    return chipmap
+
+def tile_block(block, chipmap):
+    num_rows = int(block.num_rows)
+    num_cols = int(block.num_cols)
+    start_row = int(block.start_row)
+    start_col = int(block.start_column)
+    definition = block.definition[1:-1]  # remove quotation marks
+
+    new_start_row = start_row
+    new_start_col = start_col
+
+    # Check if we can place the block one block width to the right
+    if start_col + num_cols * 2 <= 16:
+        new_start_col = start_col + num_cols
+    # If not, check if we can place it up and to the left
+    elif start_row - num_rows >= 0:
+        new_start_row = start_row - num_rows
+        if start_col - num_cols >= 0:
+            new_start_col = start_col - num_cols
+        else:
+            new_start_col = start_col
+        while new_start_col - num_cols >= 0:
+            new_start_col -= num_cols
+
+    # Place the block
+    for i in range(num_rows):
+        for j in range(num_cols):
+            chipmap[new_start_row + i][new_start_col + j] = int(definition[i * num_cols + j])
+
+    return chipmap, new_start_row, new_start_col
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, output_window):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
         self.resize(800, 600)
 
-        self.blocks = block.Block.from_blocks_folder()
+        self.blocks = Block.from_blocks_folder()
         self.curr_block = None
-
-        self.output_window = OutputWindow()
-        self.output_window.show()
-        sys.stdout = self.output_window  # Now, redirect standard output to our text widget
 
         self.setup_window = SetupWindow()
         self.setup_window.block_created.connect(self.update_blocks)
 
         self.setup_button = QtWidgets.QPushButton("Setup", self)
-        self.setup_button.setGeometry(50, 50, 100, 30)
         self.setup_button.clicked.connect(self.setup_window.show)
+        self.update_grid_button = QtWidgets.QPushButton("Update Block View", self)
+        self.update_grid_button.clicked.connect(self.update_grid)
+        self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
+        self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
+        self.output_window_button = QtWidgets.QPushButton("Open Output Window", self)
+        self.output_window_button.clicked.connect(lambda: output_window.show())
+        self.exit_button = QtWidgets.QPushButton("Exit", self)
+        self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
 
+        self.blocks_label = QtWidgets.QLabel("Load Block:", self)
+        self.blocks_dropdown = QtWidgets.QComboBox(self)
+        self.blocks_dropdown.addItems(list(self.blocks.keys()))
+        self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks_dropdown.currentText()))
+        self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
+        self.tile_block_button.clicked.connect(self.tile_block)
         self.grid_widget = GridWidget()
 
         self.theme_label = QtWidgets.QLabel("Theme:", self)
@@ -54,27 +108,6 @@ class MainWindow(QtWidgets.QMainWindow):
              'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
              'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
         self.theme_dropdown.activated.connect(lambda: change_theme(self.theme_dropdown.currentText()))
-
-        self.blocks_label = QtWidgets.QLabel("Load Block:", self)
-        self.blocks_dropdown = QtWidgets.QComboBox(self)
-        self.blocks_dropdown.addItems(list(self.blocks.keys()))
-        self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks_dropdown.currentText()))
-
-        self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
-        self.tile_block_button.clicked.connect(self.tile_block)
-
-        self.update_grid_button = QtWidgets.QPushButton("Update Block View", self)
-        self.update_grid_button.clicked.connect(self.update_grid)
-
-        self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
-        self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
-
-        self.output_window_button = QtWidgets.QPushButton("Open Output Window", self)
-        self.output_window_button.clicked.connect(lambda: self.output_window.show())
-
-        self.exit_button = QtWidgets.QPushButton("Exit", self)
-        self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
-
         self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.1", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
@@ -108,14 +141,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(container)
 
     def update_blocks(self):
-        self.blocks = block.Block.from_blocks_folder()
+        self.blocks = Block.from_blocks_folder()
         self.blocks_dropdown.clear()
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
 
     def update_grid(self):
         self.grid_widget.clear()
 
-        currmap = adlink_card.get_chip_map(1, [[0] * 16 for _ in range(64)])
+        currmap = adlink_card.get_chip_map(1) # TODO: ACCOUNT FOR MULTI CHANNEL
 
         for row in range(64):
             for column in range(16):
@@ -148,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 break
 
             adlink_card.set_chip_map(channel, chipmap_in)
-            chipmap_out = adlink_card.get_chip_map(channel, [[0] * 16 for _ in range(64)])
+            chipmap_out = adlink_card.get_chip_map(channel)
 
             for row in range(64):
                 for column in range(16):
@@ -183,7 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_widget.clear()
         self.curr_block = self.blocks[block]
 
-        currmap = chip.from_block(self.blocks[block], [[0] * 16 for _ in range(64)])
+        currmap = from_block(self.blocks[block], [[0] * 16 for _ in range(64)])
 
         for row in range(64):
             for column in range(16):
@@ -199,9 +232,9 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"Block tiled: {old_block}")
         self.grid_widget.clear()
 
-        currmap, new_start_row, new_start_column = chip.tile_block(old_block, [[0] * 16 for _ in range(64)])
+        currmap, new_start_row, new_start_column = tile_block(old_block, [[0] * 16 for _ in range(64)])
 
-        self.curr_block = block.Block(old_block.block_id, old_block.num_rows,
+        self.curr_block = Block(old_block.block_id, old_block.num_rows,
                                       old_block.num_cols, new_start_row, new_start_column, old_block.definition)
 
         for row in range(64):
@@ -211,21 +244,34 @@ class MainWindow(QtWidgets.QMainWindow):
 
         adlink_card.set_chip_map(1, currmap)
 
-
 if __name__ == "__main__":
-    #adlink_card = Adlink()
-    #adlink_card.set_chip_map(1, [[0] * 16 for _ in range(64)]) # Zero chip # TODO: UPDATE FOR MULTIPLE CHANNELS
-
     config = configparser.ConfigParser()
     config.read("config.ini")
-    theme = config.get('General', 'theme')
 
     app = QtWidgets.QApplication(sys.argv)
+    theme = config.get('General', 'theme')
     apply_stylesheet(app, theme=theme)
 
-    main_window = MainWindow()
+    output_window = OutputWindow()
+    output_window.show()
+    sys.stdout = output_window  # Now, redirect standard output to our text widget
+    main_window = MainWindow(output_window)
     main_window.show()
+
+    adlink_card = Adlink()
+    adlink_card.set_chip_map(1, [[0] * 16 for _ in range(64)]) # Zero chip # TODO: UPDATE FOR MULTIPLE CHANNELS
+
+    kbio_port = config.get('General', 'vmp3_port')
+    ec_lab = KBio(kbio_port)
+
+    grbl = GrblStreamer(grbl_callback)
+    grbl.setup_logging()
+    grbl_port = config.get('General', 'grbl_port')
+    grbl.cnect(grbl_port, 115200)
 
     app.exec()
 
+    # Cleanup funcs
     adlink_card.release_adlink()
+    ec_lab.release_kbio()
+    grbl.disconnect()
