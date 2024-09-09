@@ -41,21 +41,20 @@ class Adlink:
 
     def set_chip_state(self, channel, row, column, value):
         channel <<= 13
-
         value <<= 10
 
         address = column
         address <<= 6
         address |= row
 
-        wr = 0x0
+        wr = 0b0
         wr <<= 12
         dataToWrite = address | value | wr | channel
 
         self.dask.DO_WritePort(self.var_card, 0, dataToWrite)
         wait(0.00001)
 
-        wr = 0x1
+        wr = 0b1
         wr <<= 12
         dataToWrite = address | value | wr | channel
 
@@ -71,16 +70,16 @@ class Adlink:
         return chipmap
 
     def get_chip_state(self, channel, row, column):
-        wr = 0x1
         dataRead = []
 
         channel <<= 13
-        wr <<= 12
 
         address = column
         address <<= 6
-        address += row
+        address |= row
 
+        wr = 0b1
+        wr <<= 12
         dataToWrite = address | wr | channel
 
         self.dask.DO_WritePort(self.var_card, 0, dataToWrite)

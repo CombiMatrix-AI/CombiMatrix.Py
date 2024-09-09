@@ -108,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
              'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
              'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
         self.theme_dropdown.activated.connect(lambda: change_theme(self.theme_dropdown.currentText()))
-        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 0.1", self)
+        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 090824 Beta", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
         layout_master = QtWidgets.QVBoxLayout()
@@ -261,12 +261,12 @@ if __name__ == "__main__":
     adlink_card = Adlink()
     adlink_card.set_chip_map(1, [[0] * 16 for _ in range(64)]) # Zero chip # TODO: UPDATE FOR MULTIPLE CHANNELS
 
-    kbio_port = config.get('General', 'vmp3_port')
+    kbio_port = config.get('Ports', 'vmp3_port')
     ec_lab = KBio(kbio_port)
 
     grbl = GrblStreamer(grbl_callback)
     grbl.setup_logging()
-    grbl_port = config.get('General', 'grbl_port')
+    grbl_port = config.get('Ports', 'grbl_port')
     grbl.cnect(grbl_port, 115200)
 
     app.exec()
