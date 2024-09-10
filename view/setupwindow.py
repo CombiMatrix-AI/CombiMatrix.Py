@@ -1,6 +1,8 @@
 import os
 from PyQt6 import QtWidgets, QtCore
 
+from view.gridwidget import GridWidget
+
 
 class SetupWindow(QtWidgets.QMainWindow):
     item_created = QtCore.pyqtSignal(str)
@@ -9,6 +11,8 @@ class SetupWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle("Setup Window")
         self.tab_widget = QtWidgets.QTabWidget(self)
+
+        ##############################################################################################
 
         create_block_tab = QtWidgets.QWidget()
         create_block_layout = QtWidgets.QHBoxLayout(create_block_tab)
@@ -33,10 +37,11 @@ class SetupWindow(QtWidgets.QMainWindow):
         create_block_layout.addLayout(create_block_button_sublayout, 0)
 
         self.block_chipmap = [[0] * 16 for _ in range(64)]
-        self.grid_widget = self.ClickableGridWidget(self.block_chipmap)
+        self.grid_widget = GridWidget(8, self.block_chipmap)
         create_block_layout.addWidget(self.grid_widget, 0,
                                       QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)
 
+        ##############################################################################################
 
         create_cv_config_tab = QtWidgets.QWidget()
         create_cv_config_layout = QtWidgets.QGridLayout(create_cv_config_tab)
@@ -110,6 +115,8 @@ class SetupWindow(QtWidgets.QMainWindow):
 
         create_cv_config_layout.addWidget(end_i_label, 8, 0)
         create_cv_config_layout.addWidget(self.end_i_input, 8, 1)
+
+        ##############################################################################################
 
         self.tab_widget.addTab(create_block_tab, "Create Block")
         self.tab_widget.addTab(create_cv_config_tab, "Create CV Config")
@@ -193,40 +200,3 @@ class SetupWindow(QtWidgets.QMainWindow):
             cv_file.write(cv_config_content)
 
         self.item_created.emit(f"CV Config Created, {cv_name}")
-
-
-    class ClickableGridWidget(QtWidgets.QWidget):
-        def __init__(self, block_chipmap, rows=64, columns=16):
-            super().__init__()
-            self.block_chipmap = block_chipmap  # Bring the chipmap to this scope
-            self.setStyleSheet("background-color: black;")  # Set background color to black
-            self.grid_layout = QtWidgets.QGridLayout(self)
-            self.grid_layout.setSpacing(1)  # Set spacing between squares
-            self.squares = []
-
-            for row in range(rows):
-                row_squares = []
-                for col in range(columns):
-                    square = QtWidgets.QLabel(self)
-                    square.setFixedSize(8, 8)  # Set a fixed size for the squares
-                    square.setStyleSheet("background-color: grey;")
-                    square.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
-                    square.mousePressEvent = lambda event, r=row, c=col: self.on_square_click(r, c)
-                    self.grid_layout.addWidget(square, row, col)
-                    row_squares.append(square)
-                self.squares.append(row_squares)
-
-        def on_square_click(self, row, col):
-            if self.squares[row][col].styleSheet() == "background-color: grey;":
-                self.squares[row][col].setStyleSheet("background-color: yellow;")
-                self.block_chipmap[row][col] = 2
-            else:
-                self.squares[row][col].setStyleSheet("background-color: grey;")
-                self.block_chipmap[row][col] = 0
-
-        def clear(self):
-            for row in range(64):
-                for col in range(16):
-                    self.squares[row][col].setStyleSheet("background-color: grey;")
-                    self.block_chipmap[row][col] = 0
-

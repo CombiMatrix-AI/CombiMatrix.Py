@@ -1,8 +1,9 @@
 from PyQt6 import QtWidgets
 
 class GridWidget(QtWidgets.QWidget):
-    def __init__(self, rows=64, columns=16):
+    def __init__(self, size, block_chipmap=None, rows=64, columns=16):
         super().__init__()
+        self.block_chipmap = block_chipmap  # Bring the chipmap to this scope
         self.setStyleSheet("background-color: black;")  # Set background color to black
         self.grid_layout = QtWidgets.QGridLayout(self)
         self.grid_layout.setSpacing(1)  # Set spacing between squares
@@ -12,9 +13,11 @@ class GridWidget(QtWidgets.QWidget):
             row_squares = []
             for col in range(columns):
                 square = QtWidgets.QLabel(self)
-                square.setFixedSize(5, 5)  # Set a fixed size for the squares
+                square.setFixedSize(size, size)  # Set a fixed size for the squares
                 square.setStyleSheet("background-color: grey;")
                 square.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+                if block_chipmap is not None:
+                    square.mousePressEvent = lambda event, r=row, c=col: self.on_square_click(r, c)
                 self.grid_layout.addWidget(square, row, col)
                 row_squares.append(square)
             self.squares.append(row_squares)
@@ -23,7 +26,18 @@ class GridWidget(QtWidgets.QWidget):
         if 0 <= row < len(self.squares) and 0 <= col < len(self.squares[row]):
             self.squares[row][col].setStyleSheet(f"background-color: {color};")
 
+    def on_square_click(self, row, col):
+        if self.squares[row][col].styleSheet() == "background-color: grey;":
+            self.set_square_color(row, col, 'yellow')
+            self.block_chipmap[row][col] = 2
+        else:
+            self.set_square_color(row, col, 'grey')
+            self.block_chipmap[row][col] = 0
+
     def clear(self):
         for row in range(64):
-            for column in range(16):
-                self.set_square_color(row, column, 'grey')
+            for col in range(16):
+                self.set_square_color(row, col, 'grey')
+                if self.block_chipmap is not None:
+                    self.block_chipmap[row][col] = 0
+

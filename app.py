@@ -3,15 +3,14 @@ import sys
 import configparser
 import random
 import time
-from ctypes import c_void_p
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
 
 from block import Block
 from cv import CV
-#from adlink import Adlink
-#from kbio import KBio
+from adlink import Adlink
+from kbio import KBio
 from view.gridwidget import GridWidget
 from view.setupwindow import SetupWindow
 
@@ -70,7 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cvs_dropdown = QtWidgets.QComboBox(self)
         self.cvs_dropdown.addItems(list(self.cvs.keys()))
         self.cvs_dropdown.activated.connect(lambda: self.load_cv(self.cvs_dropdown.currentText()))
-        self.grid_widget = GridWidget()
+        self.grid_widget = GridWidget(5)
 
         self.zero_button = QtWidgets.QPushButton("Zero Machine", self)
         self.zero_button.clicked.connect(lambda: execute_gcode("Zero"))
@@ -242,7 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if currmap[self.curr_block.start_row + i][self.curr_block.start_column + j] == 2:
                     self.grid_widget.set_square_color(self.curr_block.start_row + i, self.curr_block.start_column + j, 'yellow')
 
-        #adlink_card.set_chip_map(1, currmap)
+        adlink_card.set_chip_map(1, currmap)
 
     def tile_block(self):
         if self.curr_block is None:
@@ -272,7 +271,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.curr_block = Block(self.curr_block.block_id, self.curr_block.num_rows,
                                       self.curr_block.num_cols, new_start_row, new_start_col, self.curr_block.definition)
-        #adlink_card.set_chip_map(1, currmap)
+        adlink_card.set_chip_map(1, currmap)
 
     def load_cv(self, cv):
         # Logic for loading the cv config
@@ -297,15 +296,15 @@ if __name__ == "__main__":
     main_window.load_block(main_window.blocks_dropdown.currentText())  # Ensure something is loaded when program starts
     main_window.load_cv(main_window.cvs_dropdown.currentText())
 
-    #adlink_card = Adlink()
+    adlink_card = Adlink()
 
     kbio_port = config.get('Ports', 'vmp3_port')
-    #ec_lab = KBio(kbio_port)
+    ec_lab = KBio(kbio_port)
 
     grbl = GrblStreamer(grbl_callback)
     grbl.setup_logging()
     grbl_port = config.get('Ports', 'grbl_port')
-    #grbl.cnect(grbl_port, 115200)
+    grbl.cnect(grbl_port, 115200)
 
     app.exec()
 
