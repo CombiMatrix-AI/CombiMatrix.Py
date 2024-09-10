@@ -34,16 +34,16 @@ class KBio:
             print("> kernel must be loaded in order to run the experiment")
             sys.exit(-1)
 
-    def cyclic_voltammetry(self):
-        vs_init = [False * 5]
-        v_step = [0, 1.5, 0, 0, 1]
-        scan_rate = [0.01, 0.01, 0.01, 0.01, 0.01]
-        scan_number = 2 # constant
-        record_de = 0.01
-        average_de = False
-        n_cycles = 1
-        begin_i = 0.01
-        end_i = 0.01
+    def cyclic_voltammetry(self, cv):
+        vs_init = cv.vs_init
+        v_step = cv.v_step
+        scan_rate = cv.scan_rate
+        scan_number = 2 # constant according to manual, can change later
+        record_de = cv.record_de
+        average_de = cv.average_de
+        n_cycles = cv.n_cycles
+        begin_i = cv.begin_i
+        end_i = cv.end_i
 
         cv_parms = {
             "vs_initial": ECC_parm("vs_initial", bool),

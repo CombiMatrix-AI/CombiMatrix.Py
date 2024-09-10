@@ -19,16 +19,16 @@ class Block:
             num_rows = num_cols = start_row = start_column = definition = None
             for line in file:
                 if line.startswith('Number rows'):
-                    num_rows = line.strip().split('=')[1].strip()
+                    num_rows = int(line.strip().split('=')[1].strip())
                 elif line.startswith('Number columns'):
-                    num_cols = line.strip().split('=')[1].strip()
+                    num_cols = int(line.strip().split('=')[1].strip())
                 elif line.startswith('Start row'):
-                    start_row = line.strip().split('=')[1].strip()
+                    start_row = int(line.strip().split('=')[1].strip())
                 elif line.startswith('Start column'):
-                    start_column = line.strip().split('=')[1].strip()
+                    start_column = int(line.strip().split('=')[1].strip())
                 elif line.startswith('Definition'):
                     definition = line.strip().split('=')[1].strip()
-            if not all([num_rows, num_cols, start_row, start_column, definition]):
+            if not all(var is not None for var in [num_rows, num_cols, start_row, start_column, definition]):
                 raise ValueError("File missing required block information")
         return cls(block_id, num_rows, num_cols, start_row, start_column, definition)
 
