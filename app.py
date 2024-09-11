@@ -2,14 +2,16 @@ import os
 import sys
 import configparser
 import random
+from doctest import debug
+
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
 
-from block import Block
-from cv import CV
+import fileio
 #from adlink import Adlink
 #from kbio import KBio
+from view.debugwindow import DebugWindow
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
@@ -35,13 +37,16 @@ def grbl_callback(eventstring, *data):
     print("GRBL CALLBACK: event={} data={}".format(eventstring.ljust(30), ", ".join(args)))
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, debug_window):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
         self.resize(800, 600)
 
-        self.blocks = Block.from_blocks_folder()
-        self.cvs = CV.from_cv_folder()
+        self.blocks_dir = os.path.join(os.path.dirname(__file__), 'blocks')
+        self.blocks = fileio.from_folder(self.blocks_dir, '.block')
+
+        self.cv_dir = os.path.join(os.path.dirname(__file__), 'vcfgs', 'cv')
+        self.cvs = fileio.from_folder(self.cv_dir, '.cv.vcfg')
 
         self.setup_window = SetupWindow()
         self.setup_window.item_created.connect(self.item_created)
@@ -50,6 +55,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
+        self.debug_button = QtWidgets.QPushButton("Open Debug", self)
+        self.debug_button.clicked.connect(debug_window.show)
         self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
         self.robot_controls_button.clicked.connect(self.robot_window.show)
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
@@ -81,9 +88,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.a3_button.clicked.connect(lambda: execute_gcode("A3.gcode"))
         # TODO: ADD MOVE ROBOT INCREMENTALLY BUTTONS
 
-        self.output_window = QtWidgets.QTextEdit(self)
-        self.output_window.setReadOnly(True)
-        self.output_window.setFixedSize(700, 500)
+        self.experiments_tab = QtWidgets.QListWidget()
+        self.experiments_tab.addItems(["One", "Two", "Three"])
+        self.experiments_tab.setFixedSize(700, 500)
 
         self.theme_label = QtWidgets.QLabel("Theme:", self)
         self.theme_dropdown = QtWidgets.QComboBox(self)
@@ -100,13 +107,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layout_top = QtWidgets.QGridLayout()
         layout_top.addWidget(self.setup_button, 0, 0)
-        layout_top.addWidget(self.robot_controls_button, 0, 1)
-        layout_top.addWidget(self.chip_test_button, 0, 2)
-        layout_top.addWidget(self.run_cv_button, 0, 3)
+        layout_top.addWidget(self.debug_button, 0, 1)
+        layout_top.addWidget(self.robot_controls_button, 0, 2)
+        layout_top.addWidget(self.chip_test_button, 0, 3)
+        layout_top.addWidget(self.run_cv_button, 0, 4)
         spacer_top = QtWidgets.QSpacerItem(100, 0, QtWidgets.QSizePolicy.Policy.Fixed,
                                        QtWidgets.QSizePolicy.Policy.Fixed)
-        layout_top.addItem(spacer_top, 0, 4)
-        layout_top.addWidget(self.exit_button, 0, 5)
+        layout_top.addItem(spacer_top, 0, 5)
+        layout_top.addWidget(self.exit_button, 0, 6)
         layout_master.addLayout(layout_top)
 
         layout_middle = QtWidgets.QHBoxLayout()
@@ -127,7 +135,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout_middle_grid.addItem(spacer, 3, 2)
         layout_middle_grid.addItem(spacer, 3, 3)
         layout_middle.addLayout(layout_middle_grid)
-        layout_middle.addWidget(self.output_window)
+        layout_middle.addWidget(self.experiments_tab)
         layout_middle.addWidget(self.grid_widget, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout_master.addLayout(layout_middle)
@@ -146,14 +154,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def item_created(self, text):
         if text.split(',')[0].strip() == "Block Created":
-            self.blocks = Block.from_blocks_folder()
+            self.blocks = fileio.from_folder(self.blocks_dir, '.block')
             self.blocks_dropdown.clear()
             self.blocks_dropdown.addItems(list(self.blocks.keys()))
             new_index = self.blocks_dropdown.findText(text.split(',')[1].strip())
             self.blocks_dropdown.setCurrentIndex(new_index)
             self.load_block(self.blocks_dropdown.currentText())  # Ensure something is loaded when program starts
         elif text.split(',')[0].strip() == "CV Config Created":
-            self.cvs = CV.from_cv_folder()
+            self.cvs = fileio.from_folder(self.cv_dir, '.cv.vcfg')
             self.cvs_dropdown.clear()
             self.cvs_dropdown.addItems(list(self.cvs.keys()))
             new_index = self.cvs_dropdown.findText(text.split(',')[1].strip())
@@ -228,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def tile_block(self):
         if self.curr_block is None:
             return
-        print(f"Block tiled: {self.curr_block}")
+        print(f"Block tiled")
         self.grid_widget.clear()
 
         new_start_row = self.curr_block.start_row
@@ -250,7 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.grid_widget.set_square_color(new_start_row + i, new_start_col + j, 'yellow')
 
 
-        self.curr_block = Block(self.curr_block.block_id, self.curr_block.num_rows,
+        self.curr_block = fileio.Block(self.curr_block.name, self.curr_block.num_rows,
                                       self.curr_block.num_cols, new_start_row, new_start_col, self.curr_block.definition)
         #adlink_card.set_chip_map(1, currmap)
 
@@ -259,17 +267,24 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"CV Config loaded: {cv}")
         self.curr_cv = self.cvs[cv]
 
-    def write(self, text):
-        self.output_window.append(text.rstrip())
-
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read("config.ini")
 
+    extra = {
+        # Font
+        'font_family': 'Courier New',
+        'font_size': 12,
+    }
+
     app = QtWidgets.QApplication(sys.argv)
     theme = config.get('General', 'theme')
-    apply_stylesheet(app, theme=theme)
+    apply_stylesheet(app, theme=theme, extra=extra)
+
+    debug_window = DebugWindow()
+    debug_window.show()
+    sys.stdout = debug_window # Redirect standard output to text widget
 
     #adlink_card = Adlink()
 
@@ -282,11 +297,10 @@ if __name__ == "__main__":
     #grbl.cnect(grbl_port, 115200)
     #grbl.killalarm() # Turn off alarm on startup
 
-    main_window = MainWindow()
-    sys.stdout = main_window  # Now, redirect standard output to our text widget
+    main_window = MainWindow(debug_window)
     main_window.show()
-    #main_window.load_block(main_window.blocks_dropdown.currentText())  # Ensure something is loaded when program starts
-    #main_window.load_cv(main_window.cvs_dropdown.currentText())
+    main_window.load_block(main_window.blocks_dropdown.currentText())  # Ensure something is loaded when program starts
+    main_window.load_cv(main_window.cvs_dropdown.currentText())
 
     app.exec()
 

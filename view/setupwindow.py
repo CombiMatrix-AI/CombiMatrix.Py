@@ -147,7 +147,7 @@ class SetupWindow(QtWidgets.QMainWindow):
 
         # Create the content for the .block file
         block_file_content = (
-            "[Block]\n"
+            "[Block Config]\n"
             f"Number Rows = {width}\n"
             f"Number Columns = {length}\n"
             f"Start Row = {first_row}\n"

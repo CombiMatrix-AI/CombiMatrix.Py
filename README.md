@@ -15,8 +15,6 @@ Run app.py and watch the magic happen
 - create package to be distributed
 - Add out of bound block controls?
 - Add running multiple experiments in one go
-- Consolidate file i/o functions
-- Remove block backwards compatibility
 - Add experiment output logs
 - Generalize for multi or choose channel
 - Add gcode creator?
