@@ -7,12 +7,11 @@ import time
 import inc.adlink.dask91xx as dask91xx
 
 
-def wait(duration, get_now=time.perf_counter):
+def wait(duration, get_now=time.perf_counter): # Allows for more precise nanosecond wait times
     now = get_now()
     end = now + duration
     while now < end:
         now = get_now()
-
 
 class Adlink:
     def __init__(self):
@@ -36,8 +35,10 @@ class Adlink:
                 self.set_chip_state(channel, row, column, value)
 
                 # Cause the old chips have problems double check setting was successful
-                while self.get_chip_state(channel, row, column) != value:
+                count = 0 # Limit the amount of times while loop can loop
+                while self.get_chip_state(channel, row, column) != value and count < 10:
                     self.set_chip_state(channel, row, column, value)
+                    count +=1
 
     def set_chip_state(self, channel, row, column, value):
         channel <<= 13

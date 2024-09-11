@@ -2,16 +2,16 @@ import os
 import sys
 import configparser
 import random
-import time
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
 
 from block import Block
 from cv import CV
-from adlink import Adlink
-from kbio import KBio
+#from adlink import Adlink
+#from kbio import KBio
 from view.gridwidget import GridWidget
+from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
 
 
@@ -25,10 +25,8 @@ def change_theme(theme):
 
 def execute_gcode(filename):
     gcode_dir = os.path.join(os.path.dirname(__file__), 'gcode', filename)
-    with open(gcode_dir, 'r') as file:
-        for line in file:
-            grbl.send_immediately(line)
-            time.sleep(10)
+    grbl.load_file(gcode_dir)
+    grbl.job_run()
 
 def grbl_callback(eventstring, *data):
     args = []
@@ -48,10 +46,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_window = SetupWindow()
         self.setup_window.item_created.connect(self.item_created)
 
+        self.robot_window = RobotWindow(grbl)
+
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
-        self.update_grid_button = QtWidgets.QPushButton("Update Block View", self)
-        self.update_grid_button.clicked.connect(self.update_grid)
+        self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
+        self.robot_controls_button.clicked.connect(self.robot_window.show)
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
         self.run_cv_button = QtWidgets.QPushButton("Run CV", self)
@@ -72,13 +72,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_widget = GridWidget(5)
 
         self.zero_button = QtWidgets.QPushButton("Zero Machine", self)
-        self.zero_button.clicked.connect(lambda: execute_gcode("Zero"))
+        self.zero_button.clicked.connect(lambda: execute_gcode("Zero.gcode"))
         self.a1_button = QtWidgets.QPushButton("Go to A1", self)
-        self.a1_button.clicked.connect(lambda: execute_gcode("A1"))
+        self.a1_button.clicked.connect(lambda: execute_gcode("A1.gcode"))
         self.a2_button = QtWidgets.QPushButton("Go to A2", self)
-        self.a2_button.clicked.connect(lambda: execute_gcode("A2"))
+        self.a2_button.clicked.connect(lambda: execute_gcode("A2.gcode"))
         self.a3_button = QtWidgets.QPushButton("Go to A3", self)
-        self.a3_button.clicked.connect(lambda: execute_gcode("A3"))
+        self.a3_button.clicked.connect(lambda: execute_gcode("A3.gcode"))
+        # TODO: ADD MOVE ROBOT INCREMENTALLY BUTTONS
 
         self.output_window = QtWidgets.QTextEdit(self)
         self.output_window.setReadOnly(True)
@@ -92,14 +93,14 @@ class MainWindow(QtWidgets.QMainWindow):
              'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
              'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
         self.theme_dropdown.activated.connect(lambda: change_theme(self.theme_dropdown.currentText()))
-        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 090924 Alpha", self)
+        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 091024", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
         layout_master = QtWidgets.QVBoxLayout()
 
         layout_top = QtWidgets.QGridLayout()
         layout_top.addWidget(self.setup_button, 0, 0)
-        layout_top.addWidget(self.update_grid_button, 0, 1)
+        layout_top.addWidget(self.robot_controls_button, 0, 1)
         layout_top.addWidget(self.chip_test_button, 0, 2)
         layout_top.addWidget(self.run_cv_button, 0, 3)
         spacer_top = QtWidgets.QSpacerItem(100, 0, QtWidgets.QSizePolicy.Policy.Fixed,
@@ -143,8 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(container)
 
 
-
-    def item_created(self, text): # TODO: MAYBE HAVE LIST GO TO NEW BLOCK UPON CREATING NEW BLOCK?
+    def item_created(self, text):
         if text.split(',')[0].strip() == "Block Created":
             self.blocks = Block.from_blocks_folder()
             self.blocks_dropdown.clear()
@@ -159,22 +159,6 @@ class MainWindow(QtWidgets.QMainWindow):
             new_index = self.cvs_dropdown.findText(text.split(',')[1].strip())
             self.cvs_dropdown.setCurrentIndex(new_index)
             self.load_cv(self.cvs_dropdown.currentText())
-
-    def update_grid(self):
-        self.grid_widget.clear()
-
-        currmap = adlink_card.get_chip_map(1) # TODO: ACCOUNT FOR MULTI CHANNEL
-
-        for row in range(64):
-            for column in range(16):
-                if currmap[row][column] == 0:
-                    self.grid_widget.set_square_color(row, column, 'grey')
-                if currmap[row][column] == 1:
-                    self.grid_widget.set_square_color(row, column, 'blue')
-                if currmap[row][column] == 2:
-                    self.grid_widget.set_square_color(row, column, 'yellow')
-                if currmap[row][column] == 3:
-                    self.grid_widget.set_square_color(row, column, 'green')
 
     def chip_test(self, channel):
         for i in range(7):
@@ -232,16 +216,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_widget.clear()
         self.curr_block = self.blocks[block]
 
-        definition = self.curr_block.definition[1:-1]  # remove quotation marks
-
         currmap = [[0] * 16 for _ in range(64)]
         for i in range(self.curr_block.num_rows):
             for j in range(self.curr_block.num_cols):
-                currmap[self.curr_block.start_row + i][self.curr_block.start_column + j] = int(definition[i * self.curr_block.num_cols + j])
+                currmap[self.curr_block.start_row + i][self.curr_block.start_column + j] = self.curr_block.definition[i][j]
                 if currmap[self.curr_block.start_row + i][self.curr_block.start_column + j] == 2:
                     self.grid_widget.set_square_color(self.curr_block.start_row + i, self.curr_block.start_column + j, 'yellow')
 
-        adlink_card.set_chip_map(1, currmap)
+        #adlink_card.set_chip_map(1, currmap)
 
     def tile_block(self):
         if self.curr_block is None:
@@ -249,7 +231,6 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"Block tiled: {self.curr_block}")
         self.grid_widget.clear()
 
-        definition = self.curr_block.definition[1:-1]  # remove quotation marks
         new_start_row = self.curr_block.start_row
         new_start_col = self.curr_block.start_column
 
@@ -264,14 +245,14 @@ class MainWindow(QtWidgets.QMainWindow):
         currmap = [[0] * 16 for _ in range(64)]
         for i in range(self.curr_block.num_rows):         # Place the block
             for j in range(self.curr_block.num_cols):
-                currmap[new_start_row + i][new_start_col + j] = int(definition[i * self.curr_block.num_cols + j])
+                currmap[new_start_row + i][new_start_col + j] = self.curr_block.definition[i][j]
                 if currmap[new_start_row + i][new_start_col + j] == 2:
                     self.grid_widget.set_square_color(new_start_row + i, new_start_col + j, 'yellow')
 
 
         self.curr_block = Block(self.curr_block.block_id, self.curr_block.num_rows,
                                       self.curr_block.num_cols, new_start_row, new_start_col, self.curr_block.definition)
-        adlink_card.set_chip_map(1, currmap)
+        #adlink_card.set_chip_map(1, currmap)
 
     def load_cv(self, cv):
         # Logic for loading the cv config
@@ -290,21 +271,22 @@ if __name__ == "__main__":
     theme = config.get('General', 'theme')
     apply_stylesheet(app, theme=theme)
 
-    main_window = MainWindow()
-    sys.stdout = main_window  # Now, redirect standard output to our text widget
-    main_window.show()
-    main_window.load_block(main_window.blocks_dropdown.currentText())  # Ensure something is loaded when program starts
-    main_window.load_cv(main_window.cvs_dropdown.currentText())
-
-    adlink_card = Adlink()
+    #adlink_card = Adlink()
 
     kbio_port = config.get('Ports', 'vmp3_port')
-    ec_lab = KBio(kbio_port)
+    #ec_lab = KBio(kbio_port)
 
     grbl = GrblStreamer(grbl_callback)
     grbl.setup_logging()
     grbl_port = config.get('Ports', 'grbl_port')
-    grbl.cnect(grbl_port, 115200)
+    #grbl.cnect(grbl_port, 115200)
+    #grbl.killalarm() # Turn off alarm on startup
+
+    main_window = MainWindow()
+    sys.stdout = main_window  # Now, redirect standard output to our text widget
+    main_window.show()
+    #main_window.load_block(main_window.blocks_dropdown.currentText())  # Ensure something is loaded when program starts
+    #main_window.load_cv(main_window.cvs_dropdown.currentText())
 
     app.exec()
 

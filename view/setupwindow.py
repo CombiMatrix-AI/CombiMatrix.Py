@@ -141,21 +141,18 @@ class SetupWindow(QtWidgets.QMainWindow):
         width = last_row - first_row + 1 if first_row != -1 else 0
         length = last_col - first_col + 1 if first_col != -1 else 0
 
-        block_definition = ""
-        for row in range(first_row, last_row + 1):
-            for col in range(first_col, last_col + 1):
-                block_definition += str(self.block_chipmap[row][col])
+        block_definition = [col[first_col:last_col+1] for col in self.block_chipmap[first_row:last_row+1]]
 
         block_name = self.block_name_input.text()
 
         # Create the content for the .block file
         block_file_content = (
             "[Block]\n"
-            f"Number rows = {width}\n"
-            f"Number columns = {length}\n"
-            f"Start row = {first_row}\n"
-            f"Start column = {first_col}\n"
-            f'Definition = "{block_definition}"\n'
+            f"Number Rows = {width}\n"
+            f"Number Columns = {length}\n"
+            f"Start Row = {first_row}\n"
+            f"Start Column = {first_col}\n"
+            f'Definition = {block_definition}\n'
         )
 
         # Ensure the blocks directory exists

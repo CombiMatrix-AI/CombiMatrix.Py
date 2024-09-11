@@ -12,7 +12,7 @@ from inc.kbio.kbio_tech import make_ecc_parms
 class KBio:
     def __init__(self, address):
         self.api = KBIO_api(os.path.join(os.path.dirname(__file__), "lib", "kbio", "EClib64.dll"))  # Init self.api
-        self.channel = 1 # TODO: GENERALIZE LATER
+        self.channel = 5 # TODO: GENERALIZE LATER
 
         self.id, device_info = self.api.Connect(address)   # BL_Connect
         print(f"> device[{address}] info :")
@@ -80,20 +80,20 @@ class KBio:
 
         self.api.StartChannel(self.id, self.channel)
 
-        # experiment loop
+        # experiment loop # TODO: FIX PRINTING
         csvfile = open("cv.csv", "w")
         csvfile.write("t (s),I (A)\n")
         count = 0
-        print("> Reading data ", end="", flush=True)
+        # print("> Reading data ", end="", flush=True)
         while True:
             # BL_GetData
             data = self.api.GetData(self.id, self.channel)
             status, tech_name = get_info_data(self.api, data)
-            print(".", end="", flush=True)
+            # print(".", end="", flush=True)
 
             for output in get_experiment_data(self.api, data, tech_name, self.board_type):
-                csvfile.write(f"{output['t']},{output['I']}\n")
-                csvfile.flush()
+                # csvfile.write(f"{output['t']},{output['I']}\n")
+                # csvfile.flush()
                 count += 1
 
             if status == "STOP":

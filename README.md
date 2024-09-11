@@ -13,8 +13,10 @@ Run app.py and watch the magic happen
 
 ### TODO
 - create package to be distributed
-- Add out of bound block controls
-- Block as python dict?
-- make it go block by block
-- add voltage config stuff
-- add gcode support
+- Add out of bound block controls?
+- Add running multiple experiments in one go
+- Consolidate file i/o functions
+- Remove block backwards compatibility
+- Add experiment output logs
+- Generalize for multi or choose channel
+- Add gcode creator?

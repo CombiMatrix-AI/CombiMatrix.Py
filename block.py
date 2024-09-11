@@ -1,3 +1,4 @@
+import ast
 import os
 
 class Block:
@@ -15,22 +16,12 @@ class Block:
             first_line = file.readline().strip()
             if first_line != "[Block]":
                 raise ValueError("Invalid file format: first line must be [Block]")
-            block_id = os.path.basename(file_path).split('.')[0]
-            num_rows = num_cols = start_row = start_column = definition = None
+            name = os.path.basename(file_path).split('.')[0]
+            values = []
             for line in file:
-                if line.startswith('Number rows'):
-                    num_rows = int(line.strip().split('=')[1].strip())
-                elif line.startswith('Number columns'):
-                    num_cols = int(line.strip().split('=')[1].strip())
-                elif line.startswith('Start row'):
-                    start_row = int(line.strip().split('=')[1].strip())
-                elif line.startswith('Start column'):
-                    start_column = int(line.strip().split('=')[1].strip())
-                elif line.startswith('Definition'):
-                    definition = line.strip().split('=')[1].strip()
-            if not all(var is not None for var in [num_rows, num_cols, start_row, start_column, definition]):
-                raise ValueError("File missing required block information")
-        return cls(block_id, num_rows, num_cols, start_row, start_column, definition)
+                value = ast.literal_eval(line.split('=', 1)[1].strip())  # Evaluate the list
+                values.append(value)                                                   # Append the value to the list
+        return cls(name, values[0], values[1], values[2], values[3], values[4])
 
     @classmethod
     def from_blocks_folder(cls):
