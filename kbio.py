@@ -34,7 +34,7 @@ class KBio:
             print("> kernel must be loaded in order to run the experiment")
             sys.exit(-1)
 
-    def cyclic_voltammetry(self, cv):
+    def cyclic_voltammetry(self, cv, index):
         vs_init = cv.vs_init
         v_step = cv.v_step
         scan_rate = cv.scan_rate
@@ -81,19 +81,19 @@ class KBio:
         self.api.StartChannel(self.id, self.channel)
 
         # experiment loop # TODO: FIX PRINTING
-        csvfile = open("cv.csv", "w")
+        filename = "cv" + index
+        csvfile = open(f"{filename}.csv", "w")
         csvfile.write("t (s),I (A)\n")
         count = 0
-        # print("> Reading data ", end="", flush=True)
+        print("Reading data")
         while True:
             # BL_GetData
             data = self.api.GetData(self.id, self.channel)
             status, tech_name = get_info_data(self.api, data)
-            # print(".", end="", flush=True)
+            print(".")
 
             for output in get_experiment_data(self.api, data, tech_name, self.board_type):
-                # csvfile.write(f"{output['t']},{output['I']}\n")
-                # csvfile.flush()
+                csvfile.write(f"{output}")
                 count += 1
 
             if status == "STOP":
@@ -103,7 +103,7 @@ class KBio:
 
         csvfile.close()
         print()
-        print(f"> {count} data have been written into cv.csv")
+        print(f"> {count} data have been written into {filename}.csv")
         print("> experiment done")
 
     def release_kbio(self):

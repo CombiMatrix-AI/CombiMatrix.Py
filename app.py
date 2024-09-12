@@ -165,6 +165,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def run_experiments(self):
+        index = 0
         for exp in self.experiments_list:
             execute_gcode(exp.gcode)
             self.load_block(exp.block.name, True)
@@ -179,8 +180,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                                         self.curr_block.start_column + j,
                                                       currmap[self.curr_block.start_row + i][self.curr_block.start_column + j])
             adlink_card.set_chip_map(1, currmap)
-            ec_lab.cyclic_voltammetry(self, exp.vcfg)
+            ec_lab.cyclic_voltammetry(exp.vcfg, index)
             print("Experiment completed")
+            index += 1
 
     def item_created(self, text):
         if text.split(',')[0].strip() == "Block Created":
