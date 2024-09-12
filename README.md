@@ -14,7 +14,6 @@ Run app.py and watch the magic happen
 ### TODO
 - create package to be distributed
 - Add out of bound block controls?
-- Add running multiple experiments in one go
 - Add experiment output logs
 - Generalize for multi or choose channel
 - Add gcode creator?

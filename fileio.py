@@ -22,9 +22,13 @@ def from_folder(path, suffix):
             try:
                 if suffix == ".block":
                     file = Block(*from_file(file_path, 'Block'))
+                    files[file.name] = file
                 elif suffix == ".cv.vcfg":
                     file = CV(*from_file(file_path, 'Cyclic Voltammetry'))
-                files[file.name] = file
+                    files[file.name] = file
+                else: # suffix == ".gcode"
+                    file = os.path.basename(file_path)
+                    files[file.split('.')[0]] = file
             except ValueError as ve:
                 print(f"Skipping file {filename}: {ve}")
     return files
