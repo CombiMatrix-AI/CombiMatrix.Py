@@ -6,15 +6,35 @@ from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
 import time
+import easy_biologic as ebl
+import easy_biologic.base_programs as blp
 
 import experiment
 import fileio
-#from adlink import Adlink
-#from kbio import KBio
+from adlink import Adlink
 from view.debugwindow import DebugWindow
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
+
+def run_cv(bl):
+    params = {
+        'start': 0.5,
+        'end': 0.00,
+        'E2': 0.8,
+        'Ef': 1.0,
+        'rate': 0.05,
+        'step': 0.001,
+        'N_Cycles': 2,
+        'begin_measuring_I': 0.5,
+        'End_measuring_I': 1.0,
+    }
+
+    CV = blp.CV(bl, params, channels=[0] ) # channel is to be claimed.
+
+    # run program and save data into csv file.
+    CV.run('data')
+    CV.save_data('CV.csv')
 
 
 def change_theme(theme):
@@ -34,7 +54,7 @@ def init_machines():
     print("DEBUG MESSAGE: Adlink Card Initialized")
 
     kbio_port = config.get('Ports', 'vmp3_port')
-    ec_lab = KBio(kbio_port)
+    ec_lab = ebl.BiologicDevice(kbio_port)
     print("DEBUG MESSAGE: EC-Lab PAR Initialized")
 
     grbl = GrblStreamer(grbl_callback)
@@ -52,7 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, debug_window):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
-        #self.adlink_card, self.ec_lab, self.grbl = init_machines()
+        self.adlink_card, self.ec_lab, self.grbl = init_machines()
         print("DEBUG MESSAGE: All Machines Initialized")
 
         self.blocks_dir = os.path.join(os.path.dirname(__file__), 'blocks')
@@ -65,14 +85,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_window = SetupWindow()
         self.setup_window.item_created.connect(self.item_created)
 
-        #self.robot_window = RobotWindow(self.grbl)
+        self.robot_window = RobotWindow(self.grbl)
 
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
         self.debug_button = QtWidgets.QPushButton("Open Debug", self)
         self.debug_button.clicked.connect(debug_window.show)
         self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
-        #self.robot_controls_button.clicked.connect(self.robot_window.show)
+        self.robot_controls_button.clicked.connect(self.robot_window.show)
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
         self.run_cv_button = QtWidgets.QPushButton("Run Experiments", self)
@@ -185,7 +205,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for exp in self.experiments_list:
             self.execute_gcode(exp.gcode)
             self.load_block(exp.block, True)
-            self.ec_lab.cyclic_voltammetry(exp.vcfg, index)
+            run_cv(self.ec_lab)
             print("Experiment completed")
             index += 1
 
@@ -276,7 +296,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 current_map[block.start_row + i][block.start_col + j] = block.definition[i][j]
                 self.grid_widget.set_square_color(block.start_row + i, block.start_col + j,
                                                   current_map[block.start_row + i][block.start_col + j])
-        #self.adlink_card.set_chip_map(1, current_map)
+        self.adlink_card.set_chip_map(1, current_map)
 
     def load_cv(self, cv):
         # Logic for loading the cv config
