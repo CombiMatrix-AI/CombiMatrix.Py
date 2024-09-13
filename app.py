@@ -6,6 +6,7 @@ from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
 import time
+from dataclasses import asdict
 import easy_biologic as ebl
 import easy_biologic.base_programs as blp
 
@@ -17,24 +18,15 @@ from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
 
-def run_cv(bl):
-    params = {
-        'start': 0.5,
-        'end': 0.00,
-        'E2': 0.8,
-        'Ef': 1.0,
-        'rate': 0.05,
-        'step': 0.001,
-        'N_Cycles': 2,
-        'begin_measuring_I': 0.5,
-        'End_measuring_I': 1.0,
-    }
+def run_cv(bl, cv, index):
+    params = asdict(cv)
+    del params['name'] # Dont pass name to params
 
     CV = blp.CV(bl, params, channels=[0] ) # channel is to be claimed.
 
     # run program and save data into csv file.
     CV.run('data')
-    CV.save_data('CV.csv')
+    CV.save_data(f'CV{index}.csv')
 
 
 def change_theme(theme):
@@ -205,7 +197,8 @@ class MainWindow(QtWidgets.QMainWindow):
         for exp in self.experiments_list:
             self.execute_gcode(exp.gcode)
             self.load_block(exp.block, True)
-            run_cv(self.ec_lab)
+            run_cv(self.ec_lab, exp.vcfg, index)
+
             print("Experiment completed")
             index += 1
 

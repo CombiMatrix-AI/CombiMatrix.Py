@@ -4,14 +4,15 @@ from dataclasses import dataclass, field
 @dataclass
 class CV:
     name: str
-    record_de: float
-    average_de: bool
-    n_cycles: int
-    begin_i: float
-    end_i: float
-    vs_init: list[bool] = field(default_factory=list)
-    v_step: list[float] = field(default_factory=list)
-    scan_rate: list[float] = field(default_factory=list)
+    start: float
+    end: float
+    E2: float
+    Ef: float
+    rate: float
+    step: float
+    N_cycles: int
+    begin_measuring_I: float
+    End_measuring_I: float
 
 @dataclass
 class Block:
