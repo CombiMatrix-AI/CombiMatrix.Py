@@ -17,3 +17,4 @@ Run app.py and watch the magic happen
 - Add experiment output logs
 - Generalize for multi or choose channel
 - Add gcode creator?
+- Add coordinates on mouse over

@@ -166,25 +166,25 @@ class SetupWindow(QtWidgets.QMainWindow):
         self.item_created.emit(f"Block Created, {block_name}")
 
     def create_cv(self):
-        vs_init_vals = [chk.isChecked() for chk in self.vs_init_input]
-        v_step_vals = [float(ledit.text()) for ledit in self.v_step_input]
-        scan_rate_vals = [float(ledit.text()) for ledit in self.scan_rate_input]
         record_de_val = float(self.record_de_input.text())
         average_de_val = self.average_de_input.isChecked()
         n_cycles_val = int(self.n_cycles_input.text())
         begin_i_val = float(self.begin_i_input.text())
         end_i_val = float(self.end_i_input.text())
+        vs_init_vals = [chk.isChecked() for chk in self.vs_init_input]
+        v_step_vals = [float(ledit.text()) for ledit in self.v_step_input]
+        scan_rate_vals = [float(ledit.text()) for ledit in self.scan_rate_input]
 
         cv_config_content = (
             "[Cyclic Voltammetry Config]\n"
-            f"vs_init = {vs_init_vals}\n"
-            f"v_step = {v_step_vals}\n"
-            f"scan_rate = {scan_rate_vals}\n"
             f"record_de = {record_de_val}\n"
             f"average_de = {average_de_val}\n"
             f"n_cycles = {n_cycles_val}\n"
             f"begin_i = {begin_i_val}\n"
             f"end_i = {end_i_val}\n"
+            f"vs_init = {vs_init_vals}\n"
+            f"v_step = {v_step_vals}\n"
+            f"scan_rate = {scan_rate_vals}\n"
         )
 
         cv_name = self.cv_name_input.text()  # Assuming you want to generate a common name or you can provide input for this

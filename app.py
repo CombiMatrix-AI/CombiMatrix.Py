@@ -5,11 +5,12 @@ import random
 from PyQt6 import QtWidgets, QtCore
 from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
+import time
 
+import experiment
 import fileio
-from experiment import Experiment
-from adlink import Adlink
-from kbio import KBio
+#from adlink import Adlink
+#from kbio import KBio
 from view.debugwindow import DebugWindow
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
@@ -17,17 +18,10 @@ from view.setupwindow import SetupWindow
 
 
 def change_theme(theme):
-    config = configparser.ConfigParser()
-    config.read("config.ini")
     config.set('General', 'theme', theme)
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     apply_stylesheet(QtWidgets.QApplication.instance(), theme=theme)
-
-def execute_gcode(filename):
-    gcode_dir = os.path.join(os.path.dirname(__file__), 'gcode', filename)
-    grbl.load_file(gcode_dir)
-    grbl.job_run()
 
 def grbl_callback(eventstring, *data):
     args = []
@@ -35,11 +29,31 @@ def grbl_callback(eventstring, *data):
         args.append(str(d))
     print("GRBL CALLBACK: event={} data={}".format(eventstring.ljust(30), ", ".join(args)))
 
+def init_machines():
+    adlink_card = Adlink()
+    print("DEBUG MESSAGE: Adlink Card Initialized")
+
+    kbio_port = config.get('Ports', 'vmp3_port')
+    ec_lab = KBio(kbio_port)
+    print("DEBUG MESSAGE: EC-Lab PAR Initialized")
+
+    grbl = GrblStreamer(grbl_callback)
+    grbl.setup_logging()
+    grbl_port = config.get('Ports', 'grbl_port')
+    grbl.cnect(grbl_port, 115200)
+    print("DEBUG MESSAGE: GRBL Connected")
+    time.sleep(1)  # Let grbl connect
+    grbl.killalarm()  # Turn off alarm on startup
+    print("DEBUG MESSAGE: GRBL Alarm Turned off")
+
+    return adlink_card, ec_lab, grbl
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, debug_window):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
-        self.resize(800, 600)
+        #self.adlink_card, self.ec_lab, self.grbl = init_machines()
+        print("DEBUG MESSAGE: All Machines Initialized")
 
         self.blocks_dir = os.path.join(os.path.dirname(__file__), 'blocks')
         self.blocks = fileio.from_folder(self.blocks_dir, '.block')
@@ -51,37 +65,40 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setup_window = SetupWindow()
         self.setup_window.item_created.connect(self.item_created)
 
-        self.robot_window = RobotWindow(grbl)
+        #self.robot_window = RobotWindow(self.grbl)
 
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
         self.debug_button = QtWidgets.QPushButton("Open Debug", self)
         self.debug_button.clicked.connect(debug_window.show)
         self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
-        self.robot_controls_button.clicked.connect(self.robot_window.show)
+        #self.robot_controls_button.clicked.connect(self.robot_window.show)
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
         self.run_cv_button = QtWidgets.QPushButton("Run Experiments", self)
-        self.run_cv_button.clicked.connect(lambda: self.run_experiments())
+        self.run_cv_button.clicked.connect(self.run_experiments)
         self.exit_button = QtWidgets.QPushButton("Exit", self)
         self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
 
         self.blocks_label = QtWidgets.QLabel("Load Block:", self)
         self.blocks_dropdown = QtWidgets.QComboBox(self)
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
-        self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks_dropdown.currentText()))
+        self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks[self.blocks_dropdown.currentText()]))
         self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
-        self.tile_block_button.clicked.connect(lambda: self.tile_block(True))
+        self.tile_block_button.clicked.connect(lambda: self.tile_block())
+
         self.cvs_label = QtWidgets.QLabel("Load CV Config:", self)
         self.cvs_dropdown = QtWidgets.QComboBox(self)
         self.cvs_dropdown.addItems(list(self.cvs.keys()))
-        self.cvs_dropdown.activated.connect(lambda: self.load_cv(self.cvs_dropdown.currentText()))
+        self.cvs_dropdown.activated.connect(lambda: self.load_cv(self.cvs[self.cvs_dropdown.currentText()]))
+
         self.gcode_label = QtWidgets.QLabel("Load G-code:", self)
         self.gcode_dropdown = QtWidgets.QComboBox(self)
         self.gcode_dropdown.addItems(list(self.gcode.keys()))
-        self.gcode_dropdown.activated.connect(lambda: self.load_gcode(self.gcode_dropdown.currentText()))
+        self.gcode_dropdown.activated.connect(lambda: self.load_gcode(self.gcode[self.gcode_dropdown.currentText()]))
         self.execute_gcode_button = QtWidgets.QPushButton("Execute G-code", self)
-        self.execute_gcode_button.clicked.connect(lambda: execute_gcode(self.curr_gcode))
+        self.execute_gcode_button.clicked.connect(lambda: self.execute_gcode(self.experiments_list[self.curr_exp_index].gcode))
+
         self.save_experiment_button = QtWidgets.QPushButton("New Experiment", self)
         self.save_experiment_button.clicked.connect(self.save_experiment)
         self.delete_experiment_button = QtWidgets.QPushButton("Delete Experiment", self)
@@ -89,19 +106,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.grid_widget = GridWidget(5)
 
-        self.curr_cv = None
-        self.curr_block = None
-        self.curr_gcode = None
-        self.load_block(self.blocks_dropdown.currentText(), True)  # Ensure something is loaded when program starts
-        self.load_cv(self.cvs_dropdown.currentText(), True)
-        self.load_gcode(self.gcode_dropdown.currentText(), True)
-
-        self.experiments_list = [Experiment(self.curr_block, "CV",
-                                       self.curr_cv,
-                                       self.curr_gcode)]  # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.curr_exp_index = 0
+        # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
+        self.experiments_list = [experiment.Experiment(self.blocks[self.blocks_dropdown.currentText()],
+                                            "CV",
+                                            self.cvs[self.cvs_dropdown.currentText()],
+                                            self.gcode[self.gcode_dropdown.currentText()])]
+
+
         self.experiments_tab = QtWidgets.QListWidget()
-        self.experiments_tab.currentItemChanged.connect(self.index_changed)
+        self.experiments_tab.currentItemChanged.connect(self.exp_index_changed)
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
         self.experiments_tab.setFixedSize(700, 500)
 
@@ -115,6 +129,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.theme_dropdown.activated.connect(lambda: change_theme(self.theme_dropdown.currentText()))
         self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 091224 Test", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
+
+        ############################### WINDOW LAYOUT #################################
 
         layout_master = QtWidgets.QVBoxLayout()
 
@@ -167,20 +183,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def run_experiments(self):
         index = 0
         for exp in self.experiments_list:
-            execute_gcode(exp.gcode)
-            self.load_block(exp.block.name, True)
-            for idx in range(exp.tiled):
-                self.tile_block()
-            currmap = [[0] * 16 for _ in range(64)]
-            for i in range(self.curr_block.num_rows):
-                for j in range(self.curr_block.num_cols):
-                    currmap[self.curr_block.start_row + i][self.curr_block.start_column + j] = \
-                    self.curr_block.definition[i][j]
-                    self.grid_widget.set_square_color(self.curr_block.start_row + i,
-                                                        self.curr_block.start_column + j,
-                                                      currmap[self.curr_block.start_row + i][self.curr_block.start_column + j])
-            adlink_card.set_chip_map(1, currmap)
-            ec_lab.cyclic_voltammetry(exp.vcfg, index)
+            self.execute_gcode(exp.gcode)
+            self.load_block(exp.block, True)
+            self.ec_lab.cyclic_voltammetry(exp.vcfg, index)
             print("Experiment completed")
             index += 1
 
@@ -191,14 +196,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.blocks_dropdown.addItems(list(self.blocks.keys()))
             new_index = self.blocks_dropdown.findText(text.split(',')[1].strip())
             self.blocks_dropdown.setCurrentIndex(new_index)
-            self.load_block(self.blocks_dropdown.currentText())
+            self.load_block(self.blocks[self.blocks_dropdown.currentText()])
         elif text.split(',')[0].strip() == "CV Config Created":
             self.cvs = fileio.from_folder(self.cv_dir, '.cv.vcfg')
             self.cvs_dropdown.clear()
             self.cvs_dropdown.addItems(list(self.cvs.keys()))
             new_index = self.cvs_dropdown.findText(text.split(',')[1].strip())
             self.cvs_dropdown.setCurrentIndex(new_index)
-            self.load_cv(self.cvs_dropdown.currentText())
+            self.load_cv(self.cvs[self.cvs_dropdown.currentText()])
 
     def chip_test(self, channel):
         for i in range(7):
@@ -220,8 +225,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 case _:
                     break
 
-        adlink_card.set_chip_map(channel, chipmap_in)
-        chipmap_out = adlink_card.get_chip_map(channel)
+        self.adlink_card.set_chip_map(channel, chipmap_in)
+        chipmap_out = self.adlink_card.get_chip_map(channel)
 
         for row in range(64):
             for column in range(16):
@@ -241,95 +246,66 @@ class MainWindow(QtWidgets.QMainWindow):
             for row, col, value1, value2 in differences:
                 print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
 
-    def load_block(self, block, initial=False):
-        # Logic for loading the block
-        print(f"Block loaded: {block}")
-        self.grid_widget.clear()
-        self.curr_block = self.blocks[block]
-        if not initial:
-            self.experiments_list[self.curr_exp_index].block = self.curr_block
-            self.update_exp_list()
+    def execute_gcode(self, gcode):
+        gcode_dir = os.path.join(os.path.dirname(__file__), 'gcode', gcode.file)
+        self.grbl.load_file(gcode_dir)
+        self.grbl.job_run()
 
-        currmap = [[0] * 16 for _ in range(64)]
-        for i in range(self.curr_block.num_rows):
-            for j in range(self.curr_block.num_cols):
-                currmap[self.curr_block.start_row + i][self.curr_block.start_column + j] = self.curr_block.definition[i][j]
-                self.grid_widget.set_square_color(self.curr_block.start_row + i,
-                                                  self.curr_block.start_column + j,
-                                                  currmap[self.curr_block.start_row + i][
-                                                      self.curr_block.start_column + j])
+    def tile_block(self):
+        self.experiments_list[self.curr_exp_index].tile_block()
 
-
-    def tile_block(self, button_pressed = False):
-        if self.curr_block is None:
-            return
-        print(f"Block tiled")
-        self.grid_widget.clear()
-
-        new_start_row = self.curr_block.start_row
-        new_start_col = self.curr_block.start_column
-
-        if self.curr_block.start_column + self.curr_block.num_cols * 2 <= 16:  # Check if we can place the block one block width to the right
-            new_start_col = self.curr_block.start_column + self.curr_block.num_cols
-        elif self.curr_block.start_row - self.curr_block.num_rows >= 0:  # If not, check if we can place it up
-            new_start_row = self.curr_block.start_row - self.curr_block.num_rows
-            new_start_col = self.curr_block.start_column
-            while new_start_col - self.curr_block.num_cols >= 0:  # Push block to the left as much as possible
-                new_start_col -= self.curr_block.num_cols
-
-        currmap = [[0] * 16 for _ in range(64)]
-        for i in range(self.curr_block.num_rows):         # Place the block
-            for j in range(self.curr_block.num_cols):
-                currmap[new_start_row + i][new_start_col + j] = self.curr_block.definition[i][j]
-                if currmap[new_start_row + i][new_start_col + j] == 2:
-                    self.grid_widget.set_square_color(new_start_row + i, new_start_col + j, 'yellow')
-
-
-        self.curr_block = fileio.Block(self.curr_block.name, self.curr_block.num_rows,
-                                      self.curr_block.num_cols, new_start_row, new_start_col, self.curr_block.definition)
-        if button_pressed:
-            self.experiments_list[self.curr_exp_index].tiled += 1
-
-    def load_cv(self, cv, initial=False):
-        # Logic for loading the cv config
-        print(f"CV Config loaded: {cv}")
-        self.curr_cv = self.cvs[cv]
-        if not initial:
-            self.experiments_list[self.curr_exp_index].vcfg = self.curr_cv
-            self.update_exp_list()
-
-    def load_gcode(self, gcode, initial=False):
-        # Logic for loading the cv config
-        print(f"G-code loaded: {gcode}")
-        self.curr_gcode = self.gcode[gcode]
-        if not initial:
-            self.experiments_list[self.curr_exp_index].gcode = self.curr_gcode
-            self.update_exp_list()
-
-    def index_changed(self, i): # Not an index, i is a QListWidgetItem
-        self.curr_exp_index = self.experiments_tab.row(i)
-        print(self.curr_exp_index)
-        self.load_block(self.experiments_list[self.curr_exp_index].block.name, True)
-        for idx in range (self.experiments_list[self.curr_exp_index].tiled):
-            self.tile_block()
-        self.load_cv(self.experiments_list[self.curr_exp_index].vcfg.name, True)
-        self.load_gcode(self.experiments_list[self.curr_exp_index].gcode.split('.')[0], True)
-        index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
-        self.blocks_dropdown.setCurrentIndex(index)
-        index = self.cvs_dropdown.findText(self.experiments_list[self.curr_exp_index].vcfg.name)
-        self.cvs_dropdown.setCurrentIndex(index)
-        index = self.gcode_dropdown.findText(self.experiments_list[self.curr_exp_index].gcode.split('.')[0])
-        self.gcode_dropdown.setCurrentIndex(index)
+        block = self.experiments_list[self.curr_exp_index].block
+        self.load_block(block, True)
 
     def update_exp_list(self):
         item = self.experiments_tab.item(self.curr_exp_index)
         if item:
             item.setText(str(self.experiments_list[self.curr_exp_index]))
 
+    def load_block(self, block, no_update_exp = False):
+        # Logic for loading the block
+        if not no_update_exp:
+            print(f"Block loaded: {block.name}")
+            self.experiments_list[self.curr_exp_index].block = block
+            self.update_exp_list()
+
+        self.grid_widget.clear()
+        current_map = [[0] * 16 for _ in range(64)]
+        for i in range(block.num_rows):
+            for j in range(block.num_cols):
+                current_map[block.start_row + i][block.start_col + j] = block.definition[i][j]
+                self.grid_widget.set_square_color(block.start_row + i, block.start_col + j,
+                                                  current_map[block.start_row + i][block.start_col + j])
+        #self.adlink_card.set_chip_map(1, current_map)
+
+    def load_cv(self, cv):
+        # Logic for loading the cv config
+        print(f"CV Config loaded: {cv.name}")
+        self.experiments_list[self.curr_exp_index].vcfg = cv
+        self.update_exp_list()
+
+    def load_gcode(self, gcode):
+        # Logic for loading the cv config
+        print(f"G-code loaded: {gcode.name}")
+        self.experiments_list[self.curr_exp_index].gcode = gcode
+        self.update_exp_list()
+
+    def exp_index_changed(self, i): # Not an index, i is a QListWidgetItem
+        print(f"Row changed to {self.experiments_tab.row(i)}")
+        self.curr_exp_index = self.experiments_tab.row(i)
+        self.load_block(self.experiments_list[self.curr_exp_index].block, True)
+        index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
+        self.blocks_dropdown.setCurrentIndex(index)
+        index = self.cvs_dropdown.findText(self.experiments_list[self.curr_exp_index].vcfg.name)
+        self.cvs_dropdown.setCurrentIndex(index)
+        index = self.gcode_dropdown.findText(self.experiments_list[self.curr_exp_index].gcode.name)
+        self.gcode_dropdown.setCurrentIndex(index)
+
     def save_experiment(self):
-        self.experiments_list.append(Experiment(self.curr_block, "CV",
-                                       self.curr_cv,
-                                       self.curr_gcode))  # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
+        # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
+        self.experiments_list.append(
+            experiment.Experiment(self.blocks[self.blocks_dropdown.currentText()], "CV",
+                                                self.cvs[self.cvs_dropdown.currentText()], self.gcode[self.gcode_dropdown.currentText()]))
         self.experiments_tab.addItem(str(self.experiments_list[-1]))
 
     def delete_experiment(self):
@@ -338,8 +314,6 @@ class MainWindow(QtWidgets.QMainWindow):
         del self.experiments_list[self.curr_exp_index]
         self.experiments_tab.clear()
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
-
-
 
 if __name__ == "__main__":
     config = configparser.ConfigParser()
@@ -359,23 +333,12 @@ if __name__ == "__main__":
     debug_window.show()
     sys.stdout = debug_window # Redirect standard output to text widget
 
-    adlink_card = Adlink()
-
-    kbio_port = config.get('Ports', 'vmp3_port')
-    ec_lab = KBio(kbio_port)
-
-    grbl = GrblStreamer(grbl_callback)
-    grbl.setup_logging()
-    grbl_port = config.get('Ports', 'grbl_port')
-    grbl.cnect(grbl_port, 115200)
-    grbl.killalarm() # Turn off alarm on startup
-
     main_window = MainWindow(debug_window)
     main_window.show()
 
     app.exec()
 
     # Cleanup funcs
-    adlink_card.release_adlink()
-    ec_lab.release_kbio()
-    grbl.disconnect()
+    main_window.adlink_card.release_adlink()
+    main_window.ec_lab.release_kbio()
+    main_window.grbl.disconnect()

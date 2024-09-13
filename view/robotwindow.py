@@ -15,17 +15,17 @@ class RobotWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Control Robot")
 
         self.py_button = QtWidgets.QPushButton("+Y", self)
-        self.py_button.clicked.connect(lambda: increment(grbl_instance, 'Y10')) # Move 10 mm
+        self.py_button.clicked.connect(lambda: increment(grbl_instance, 'Y1')) # Move 1 mm
         self.pz_button = QtWidgets.QPushButton("+Z", self)
-        self.pz_button.clicked.connect(lambda: increment(grbl_instance, 'Z10'))
+        self.pz_button.clicked.connect(lambda: increment(grbl_instance, 'Z1'))
         self.nx_button = QtWidgets.QPushButton("-X", self)
-        self.nx_button.clicked.connect(lambda: increment(grbl_instance, 'X-10'))
+        self.nx_button.clicked.connect(lambda: increment(grbl_instance, 'X-1'))
         self.ny_button = QtWidgets.QPushButton("-Y", self)
-        self.ny_button.clicked.connect(lambda: increment(grbl_instance, 'Y-10'))
+        self.ny_button.clicked.connect(lambda: increment(grbl_instance, 'Y-1'))
         self.px_button = QtWidgets.QPushButton("+X", self)
-        self.px_button.clicked.connect(lambda: increment(grbl_instance, 'X10'))
+        self.px_button.clicked.connect(lambda: increment(grbl_instance, 'X1'))
         self.nz_button = QtWidgets.QPushButton("-Z", self)
-        self.nz_button.clicked.connect(lambda: increment(grbl_instance, 'Z-10'))
+        self.nz_button.clicked.connect(lambda: increment(grbl_instance, 'Z-1'))
 
         robot_controls = QtWidgets.QWidget()
         robot_controls_layout = QtWidgets.QGridLayout(robot_controls)

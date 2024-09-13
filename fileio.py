@@ -1,5 +1,6 @@
 import ast
 import os
+import experiment
 
 def from_file(file_path, file_type):
     with open(file_path, 'r') as file:
@@ -21,35 +22,16 @@ def from_folder(path, suffix):
             file_path = os.path.join(path, filename)
             try:
                 if suffix == ".block":
-                    file = Block(*from_file(file_path, 'Block'))
-                    files[file.name] = file
+                    file = experiment.Block(*from_file(file_path, 'Block'))
                 elif suffix == ".cv.vcfg":
-                    file = CV(*from_file(file_path, 'Cyclic Voltammetry'))
-                    files[file.name] = file
-                else: # suffix == ".gcode"
-                    file = os.path.basename(file_path)
-                    files[file.split('.')[0]] = file
+                    file = experiment.CV(*from_file(file_path, 'Cyclic Voltammetry'))
+                elif suffix == ".gcode":
+                    filename = os.path.basename(file_path)
+                    file = experiment.Gcode(filename.split('.')[0], filename)
+                else:
+                    print(f"Unsupported file type: {suffix}")
+                    return
+                files[file.name] = file
             except ValueError as ve:
                 print(f"Skipping file {filename}: {ve}")
     return files
-
-class CV:
-    def __init__(self, name, vs_init, v_step, scan_rate, record_de, average_de, n_cycles, begin_i, end_i):
-        self.name = name
-        self.vs_init = vs_init
-        self.v_step = v_step
-        self.scan_rate = scan_rate
-        self.record_de = record_de
-        self.average_de = average_de
-        self.n_cycles = n_cycles
-        self.begin_i = begin_i
-        self.end_i = end_i
-
-class Block:
-    def __init__(self, name, num_rows, num_cols, start_row, start_column, definition):
-        self.name = name
-        self.num_rows = num_rows
-        self.num_cols = num_cols
-        self.start_row = start_row
-        self.start_column = start_column
-        self.definition = definition
