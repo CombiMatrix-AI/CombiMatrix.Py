@@ -29,7 +29,8 @@ class Gcode:
     file: str
 
 class Experiment:
-    def __init__(self, block, technique, vcfg, gcode):
+    def __init__(self, solution, block, technique, vcfg, gcode):
+        self.solution: str = solution
         self.block: Block = block
         self.technique: str = technique
         self.vcfg: CV = vcfg
@@ -51,6 +52,6 @@ class Experiment:
                                       self.block.num_cols, new_start_row, new_start_col, self.block.definition)
 
     def __str__(self):
-        return (f'Block: {self.block.name[:9]:<10} Technique: {self.technique[:9]:<10} '
-                f'Config: {self.vcfg.name[:9]:<10} Well: {self.gcode.name[:9]:<10}')
+        return (f'Solution: {self.solution[:9]:<10} Block: {self.block.name[:6]:<7} Mode: {self.technique[:6]:<7} '
+                f'Vcfg: {self.vcfg.name[:6]:<7} Well: {self.gcode.name[:6]:<7}')
 

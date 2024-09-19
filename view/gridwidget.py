@@ -14,6 +14,7 @@ class GridWidget(QtWidgets.QWidget):
             for col in range(columns):
                 square = QtWidgets.QLabel(self)
                 square.setFixedSize(size, size)  # Set a fixed size for the squares
+                square.setToolTip(f"{row}, {col}")
                 square.setStyleSheet("background-color: grey;")
                 square.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
                 if block_chipmap is not None:

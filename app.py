@@ -18,16 +18,42 @@ from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
 
+import csv
+import matplotlib.pyplot as plt
+from collections import namedtuple
+
+DataSegment = namedtuple('DataSegment', ['data', 'info', 'values'])
+
+
+def on_data_cb(segment, program):
+    current = segment.values.get("Current (A)")
+    time = segment.values.get("Time (s)")
+
+    # Store data to CSV
+    with open('data.csv', mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([time, current])
+
+    # Plotting the point
+    plt.scatter(time, current)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Current (A)')
+    plt.title('Current vs Time')
+    plt.draw()
+    plt.pause(0.01)  # Pause to allow the plot to update
+
+    plt.ion()  # Turn on interactive mode
+
 def run_cv(bl, cv, index):
     params = asdict(cv)
-    del params['name'] # Dont pass name to params
+    del params['name'] # Don't pass name to params
 
-    CV = blp.CV(bl, params, channels=[0] ) # channel is to be claimed.
+    CV = blp.CV(bl, params, channels=[4] ) # channel is to be claimed.
 
     # run program and save data into csv file.
     CV.run('data')
+    #CV.on_data(on_data_cb)
     CV.save_data(f'CV{index}.csv')
-
 
 def change_theme(theme):
     config.set('General', 'theme', theme)
@@ -92,38 +118,48 @@ class MainWindow(QtWidgets.QMainWindow):
         self.exit_button = QtWidgets.QPushButton("Exit", self)
         self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
 
+        self.solution_input_label = QtWidgets.QLabel("Enter Solution:", self)
+        self.solution_input = QtWidgets.QLineEdit(self)
+        self.solution_input.setPlaceholderText("Solution")
+
         self.blocks_label = QtWidgets.QLabel("Load Block:", self)
         self.blocks_dropdown = QtWidgets.QComboBox(self)
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
-        self.blocks_dropdown.activated.connect(lambda: self.load_block(self.blocks[self.blocks_dropdown.currentText()]))
         self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
         self.tile_block_button.clicked.connect(lambda: self.tile_block())
 
         self.cvs_label = QtWidgets.QLabel("Load CV Config:", self)
         self.cvs_dropdown = QtWidgets.QComboBox(self)
         self.cvs_dropdown.addItems(list(self.cvs.keys()))
-        self.cvs_dropdown.activated.connect(lambda: self.load_cv(self.cvs[self.cvs_dropdown.currentText()]))
 
         self.gcode_label = QtWidgets.QLabel("Load G-code:", self)
         self.gcode_dropdown = QtWidgets.QComboBox(self)
         self.gcode_dropdown.addItems(list(self.gcode.keys()))
-        self.gcode_dropdown.activated.connect(lambda: self.load_gcode(self.gcode[self.gcode_dropdown.currentText()]))
         self.execute_gcode_button = QtWidgets.QPushButton("Execute G-code", self)
         self.execute_gcode_button.clicked.connect(lambda: self.execute_gcode(self.experiments_list[self.curr_exp_index].gcode))
 
         self.save_experiment_button = QtWidgets.QPushButton("New Experiment", self)
         self.save_experiment_button.clicked.connect(self.save_experiment)
+        self.update_experiment_button = QtWidgets.QPushButton("Update Experiment", self)
+        self.update_experiment_button.clicked.connect(self.update_experiment)
         self.delete_experiment_button = QtWidgets.QPushButton("Delete Experiment", self)
         self.delete_experiment_button.clicked.connect(self.delete_experiment)
+
+        # Create a checkbox that starts out checked and controls a corresponding boolean
+        self.par_checkbox_state = True  # Initial state (checked)
+        self.par_checkbox = QtWidgets.QCheckBox("Enable PAR", self)
+        self.par_checkbox.setChecked(self.par_checkbox_state)
+        self.par_checkbox.stateChanged.connect(self.par_checkbox_toggled)
 
         self.grid_widget = GridWidget(5)
 
         self.curr_exp_index = 0
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
-        self.experiments_list = [experiment.Experiment(self.blocks[self.blocks_dropdown.currentText()],
+        self.experiments_list = [experiment.Experiment("null", self.blocks[self.blocks_dropdown.currentText()],
                                             "CV",
                                             self.cvs[self.cvs_dropdown.currentText()],
                                             self.gcode[self.gcode_dropdown.currentText()])]
+        self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
 
         self.experiments_tab = QtWidgets.QListWidget()
@@ -160,20 +196,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layout_middle = QtWidgets.QHBoxLayout()
         layout_middle_grid = QtWidgets.QGridLayout()
-        layout_middle_grid.addWidget(self.blocks_label, 0, 0)
-        layout_middle_grid.addWidget(self.blocks_dropdown, 0, 1)
-        layout_middle_grid.addWidget(self.tile_block_button, 0, 2)
-        layout_middle_grid.addWidget(self.cvs_label, 1, 0)
-        layout_middle_grid.addWidget(self.cvs_dropdown, 1, 1)
-        layout_middle_grid.addWidget(self.gcode_label, 2, 0)
-        layout_middle_grid.addWidget(self.gcode_dropdown, 2, 1)
-        layout_middle_grid.addWidget(self.execute_gcode_button, 2, 2)
-        layout_middle_grid.addWidget(self.save_experiment_button, 3, 0)
-        layout_middle_grid.addWidget(self.delete_experiment_button, 3, 1)
-        spacer = QtWidgets.QSpacerItem(125, 150, QtWidgets.QSizePolicy.Policy.Fixed,
+        layout_middle_grid.addWidget(self.solution_input_label, 0, 0)
+        layout_middle_grid.addWidget(self.solution_input, 0, 1, 1, 2)
+        layout_middle_grid.addWidget(self.blocks_label, 1, 0)
+        layout_middle_grid.addWidget(self.blocks_dropdown, 1, 1)
+        layout_middle_grid.addWidget(self.tile_block_button, 1, 2)
+        layout_middle_grid.addWidget(self.cvs_label, 2, 0)
+        layout_middle_grid.addWidget(self.cvs_dropdown, 2, 1)
+        layout_middle_grid.addWidget(self.gcode_label, 3, 0)
+        layout_middle_grid.addWidget(self.gcode_dropdown, 3, 1)
+        layout_middle_grid.addWidget(self.execute_gcode_button, 3, 2)
+        layout_middle_grid.addWidget(self.save_experiment_button, 4, 0)
+        layout_middle_grid.addWidget(self.update_experiment_button, 4, 1)
+        layout_middle_grid.addWidget(self.delete_experiment_button, 4, 2)
+        layout_middle_grid.addWidget(self.par_checkbox, 5, 0)
+        spacer = QtWidgets.QSpacerItem(125, 125, QtWidgets.QSizePolicy.Policy.Fixed,
                                        QtWidgets.QSizePolicy.Policy.Minimum)
-        layout_middle_grid.addItem(spacer, 4, 0)
-        layout_middle_grid.addItem(spacer, 4, 1)
+        layout_middle_grid.addItem(spacer, 6, 0)
+        layout_middle_grid.addItem(spacer, 6, 1)
         layout_middle.addLayout(layout_middle_grid)
         layout_middle.addWidget(self.experiments_tab)
         layout_middle.addWidget(self.grid_widget, 0,
@@ -197,10 +237,15 @@ class MainWindow(QtWidgets.QMainWindow):
         for exp in self.experiments_list:
             self.execute_gcode(exp.gcode)
             self.load_block(exp.block, True)
-            run_cv(self.ec_lab, exp.vcfg, index)
+
+            if self.par_checkbox_state:
+                run_cv(self.ec_lab, exp.vcfg, index)
 
             print("Experiment completed")
             index += 1
+
+    def par_checkbox_toggled(self, state):
+        self.par_checkbox_state = state == QtCore.Qt.CheckState.Checked
 
     def item_created(self, text):
         if text.split(',')[0].strip() == "Block Created":
@@ -268,20 +313,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.experiments_list[self.curr_exp_index].tile_block()
 
         block = self.experiments_list[self.curr_exp_index].block
-        self.load_block(block, True)
+        self.load_block(block)
 
     def update_exp_list(self):
         item = self.experiments_tab.item(self.curr_exp_index)
         if item:
             item.setText(str(self.experiments_list[self.curr_exp_index]))
 
-    def load_block(self, block, no_update_exp = False):
+    def load_block(self, block, set_card = False):
         # Logic for loading the block
-        if not no_update_exp:
-            print(f"Block loaded: {block.name}")
-            self.experiments_list[self.curr_exp_index].block = block
-            self.update_exp_list()
-
         self.grid_widget.clear()
         current_map = [[0] * 16 for _ in range(64)]
         for i in range(block.num_rows):
@@ -289,37 +329,39 @@ class MainWindow(QtWidgets.QMainWindow):
                 current_map[block.start_row + i][block.start_col + j] = block.definition[i][j]
                 self.grid_widget.set_square_color(block.start_row + i, block.start_col + j,
                                                   current_map[block.start_row + i][block.start_col + j])
-        self.adlink_card.set_chip_map(1, current_map)
-
-    def load_cv(self, cv):
-        # Logic for loading the cv config
-        print(f"CV Config loaded: {cv.name}")
-        self.experiments_list[self.curr_exp_index].vcfg = cv
-        self.update_exp_list()
-
-    def load_gcode(self, gcode):
-        # Logic for loading the cv config
-        print(f"G-code loaded: {gcode.name}")
-        self.experiments_list[self.curr_exp_index].gcode = gcode
-        self.update_exp_list()
+        if set_card:
+            self.adlink_card.set_chip_map(1, current_map)
 
     def exp_index_changed(self, i): # Not an index, i is a QListWidgetItem
         print(f"Row changed to {self.experiments_tab.row(i)}")
         self.curr_exp_index = self.experiments_tab.row(i)
-        self.load_block(self.experiments_list[self.curr_exp_index].block, True)
-        index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
-        self.blocks_dropdown.setCurrentIndex(index)
-        index = self.cvs_dropdown.findText(self.experiments_list[self.curr_exp_index].vcfg.name)
-        self.cvs_dropdown.setCurrentIndex(index)
-        index = self.gcode_dropdown.findText(self.experiments_list[self.curr_exp_index].gcode.name)
-        self.gcode_dropdown.setCurrentIndex(index)
+        if self.curr_exp_index != -1: # Dont load anything if list is empty
+            self.load_block(self.experiments_list[self.curr_exp_index].block)
+            index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
+            self.blocks_dropdown.setCurrentIndex(index)
+            index = self.cvs_dropdown.findText(self.experiments_list[self.curr_exp_index].vcfg.name)
+            self.cvs_dropdown.setCurrentIndex(index)
+            index = self.gcode_dropdown.findText(self.experiments_list[self.curr_exp_index].gcode.name)
+            self.gcode_dropdown.setCurrentIndex(index)
 
     def save_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list.append(
-            experiment.Experiment(self.blocks[self.blocks_dropdown.currentText()], "CV",
+            experiment.Experiment(self.solution_input.text(), self.blocks[self.blocks_dropdown.currentText()], "CV",
                                                 self.cvs[self.cvs_dropdown.currentText()], self.gcode[self.gcode_dropdown.currentText()]))
         self.experiments_tab.addItem(str(self.experiments_list[-1]))
+
+    def update_experiment(self):
+        # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
+        self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(),
+                                                                           self.blocks[self.blocks_dropdown.currentText()],
+                                                                           "CV",
+                                                                            self.cvs[self.cvs_dropdown.currentText()],
+                                                                           self.gcode[self.gcode_dropdown.currentText()])
+        self.load_block(self.experiments_list[self.curr_exp_index].block)
+        item = self.experiments_tab.item(self.curr_exp_index)
+        if item:
+            item.setText(str(self.experiments_list[self.curr_exp_index]))
 
     def delete_experiment(self):
         if self.curr_exp_index == -1:
