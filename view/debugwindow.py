@@ -4,7 +4,7 @@ class DebugWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setGeometry(100, 100, 700, 500)
+        self.setGeometry(0, 0, 700, 500)
         self.setWindowTitle("Debug Display")
 
         layout = QVBoxLayout()
