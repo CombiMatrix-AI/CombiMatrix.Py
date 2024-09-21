@@ -14,14 +14,14 @@ class LaunchWindow(QWidget):
         super().__init__()
 
         # Set window title and geometry
-        self.setWindowTitle("CombiMatrixAI Launch")
+        self.setWindowTitle("Integrated Self-Driving Laboratory Software Launch")
         self.setGeometry(200, 200, 700, 500)
 
         # Create a vertical layout
         layout = QVBoxLayout()
 
         # Create a label for the title
-        title = QLabel("CombiMatrixAI", self)
+        title = QLabel("Yonder", self)
         title.setProperty('class', 'title')
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
 

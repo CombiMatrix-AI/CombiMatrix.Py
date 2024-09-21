@@ -179,7 +179,7 @@ class MainWindow(QtWidgets.QMainWindow):
              'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
              'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
         self.theme_dropdown.activated.connect(lambda: change_theme(self.theme_dropdown.currentText()))
-        self.version_label = QtWidgets.QLabel("CombiMatrixAI, App Version: 091224 Test", self)
+        self.version_label = QtWidgets.QLabel("Yonder, App Version: Pre-Beta", self)
         self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
         ############################### WINDOW LAYOUT #################################
