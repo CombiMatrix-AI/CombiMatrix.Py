@@ -1,17 +1,18 @@
-import configparser
+import platform
 import os
 import random
 from PyQt6 import QtWidgets, QtCore
-from qt_material import apply_stylesheet
 from grbl_streamer import GrblStreamer
 import time
 from dataclasses import asdict
-import easy_biologic as ebl
-import easy_biologic.base_programs as blp
+if platform.system() != 'Darwin':
+    import easy_biologic as ebl
+    import easy_biologic.base_programs as blp
 
 import experiment
 import fileio
-from adlink import Adlink
+if platform.system() != 'Darwin':
+    from adlink import Adlink
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
@@ -52,13 +53,7 @@ def run_cv(bl, cv, index):
     #CV.on_data(on_data_cb)
     CV.save_data(f'CV{index}.csv')
 
-def change_theme(theme):
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-    config.set('General', 'theme', theme)
-    with open('config.ini', 'w') as configfile:
-        config.write(configfile)
-    apply_stylesheet(QtWidgets.QApplication.instance(), theme=theme)
+
 
 def grbl_callback(eventstring, *data):
     args = []
@@ -93,7 +88,8 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
 
-        self.adlink_card = init_adlink()
+        if platform.system() != 'Darwin':
+            self.adlink_card = init_adlink()
         if enable_robot:
             self.grbl = init_robot()
         if enable_par:
@@ -171,16 +167,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
         self.experiments_tab.setFixedSize(700, 500)
 
-        self.theme_label = QtWidgets.QLabel("Theme:", self)
-        self.theme_dropdown = QtWidgets.QComboBox(self)
-        self.theme_dropdown.addItems(
-            ['dark_amber.xml', 'dark_blue.xml', 'dark_cyan.xml', 'dark_lightgreen.xml', 'dark_pink.xml',
-             'dark_purple.xml', 'dark_red.xml', 'dark_teal.xml', 'dark_yellow.xml', 'light_amber.xml', 'light_blue.xml',
-             'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
-             'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
-        self.theme_dropdown.activated.connect(lambda: change_theme(self.theme_dropdown.currentText()))
-        self.version_label = QtWidgets.QLabel("Yonder, App Version: Pre-Beta", self)
-        self.version_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
 
         ############################### WINDOW LAYOUT #################################
 
@@ -222,13 +208,6 @@ class MainWindow(QtWidgets.QMainWindow):
         layout_middle.addWidget(self.grid_widget, 0,
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout_master.addLayout(layout_middle)
-
-        layout_bottom = QtWidgets.QHBoxLayout()
-        layout_bottom.addWidget(self.theme_label, 0, QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout_bottom.addWidget(self.theme_dropdown, 10, QtCore.Qt.AlignmentFlag.AlignLeft)
-        layout_bottom.addWidget(self.version_label, 0,
-                         QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignRight)
-        layout_master.addLayout(layout_bottom)
 
         container = QtWidgets.QWidget()
         container.setLayout(layout_master)
