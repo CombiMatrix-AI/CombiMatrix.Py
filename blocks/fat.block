@@ -1,0 +1,6 @@
+[Block Config]
+Number Rows = 5
+Number Columns = 10
+Start Row = 59
+Start Column = 0
+Definition = [[0, 0, 0, 0, 2, 2, 0, 0, 0, 0], [0, 0, 0, 2, 0, 0, 2, 0, 0, 0], [0, 0, 2, 2, 2, 2, 2, 2, 0, 0], [0, 2, 2, 0, 2, 2, 0, 2, 2, 0], [2, 0, 0, 2, 0, 0, 2, 0, 0, 2]]

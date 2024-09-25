@@ -4,56 +4,18 @@ import random
 from PyQt6 import QtWidgets, QtCore
 from grbl_streamer import GrblStreamer
 import time
-from dataclasses import asdict
-if platform.system() != 'Darwin':
-    import easy_biologic as ebl
-    import easy_biologic.base_programs as blp
 
 import experiment
 import fileio
+from definitions import ROOT_DIR, CONFIG, GET_ROBOT_ENABLED, GET_PAR_ENABLED, GET_COUNTER_ELECTRODE, \
+    GET_REFERENCE_ELECTRODE, GET_WORKING_ELECTRODE
+
 if platform.system() != 'Darwin':
+    from cv import KBio
     from adlink import Adlink
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
 from view.setupwindow import SetupWindow
-
-import csv
-import matplotlib.pyplot as plt
-from collections import namedtuple
-
-DataSegment = namedtuple('DataSegment', ['data', 'info', 'values'])
-
-def on_data_cb(segment, program):
-    current = segment.values.get("Current (A)")
-    time = segment.values.get("Time (s)")
-
-    # Store data to CSV
-    with open('data.csv', mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([time, current])
-
-    # Plotting the point
-    plt.scatter(time, current)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Current (A)')
-    plt.title('Current vs Time')
-    plt.draw()
-    plt.pause(0.01)  # Pause to allow the plot to update
-
-    plt.ion()  # Turn on interactive mode
-
-def run_cv(bl, cv, index):
-    params = asdict(cv)
-    del params['name'] # Don't pass name to params
-
-    CV = blp.CV(bl, params, channels=[4] ) # channel is to be claimed.
-
-    # run program and save data into csv file.
-    CV.run('data')
-    #CV.on_data(on_data_cb)
-    CV.save_data(f'CV{index}.csv')
-
-
 
 def grbl_callback(eventstring, *data):
     args = []
@@ -67,15 +29,15 @@ def init_adlink():
     return adlink_card
 
 def init_par():
-    kbio_port = config.get('Ports', 'vmp3_port')
-    ec_lab = ebl.BiologicDevice(kbio_port)
+    kbio_port = CONFIG.get('Ports', 'par_port')
+    ec_lab = KBio(kbio_port)
     print("DEBUG MESSAGE: EC-Lab PAR Initialized")
     return ec_lab
 
 def init_robot():
     grbl = GrblStreamer(grbl_callback)
     grbl.setup_logging()
-    grbl_port = config.get('Ports', 'grbl_port')
+    grbl_port = CONFIG.get('Ports', 'robot_port')
     grbl.cnect(grbl_port, 115200)
     print("DEBUG MESSAGE: GRBL Connected")
     time.sleep(1)  # Let grbl connect
@@ -83,10 +45,13 @@ def init_robot():
     print("DEBUG MESSAGE: GRBL Alarm Turned off")
     return grbl
 
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, debug_window, enable_robot, enable_par):
+class ExperimentWindow(QtWidgets.QMainWindow):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
+
+        enable_robot = GET_ROBOT_ENABLED()
+        enable_par = GET_PAR_ENABLED()
 
         if platform.system() != 'Darwin':
             self.adlink_card = init_adlink()
@@ -97,11 +62,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         print("DEBUG MESSAGE: All Machines Initialized")
 
-        self.blocks_dir = os.path.join(os.path.dirname(__file__), 'blocks')
+        self.blocks_dir = os.path.join(ROOT_DIR, 'blocks')
         self.blocks = fileio.from_folder(self.blocks_dir, '.block')
-        self.cv_dir = os.path.join(os.path.dirname(__file__), 'vcfgs', 'cv')
+        self.cv_dir = os.path.join(ROOT_DIR, 'vcfgs', 'cv')
         self.cvs = fileio.from_folder(self.cv_dir, '.cv.vcfg')
-        self.gcode_dir = os.path.join(os.path.dirname(__file__), 'gcode')
+        self.gcode_dir = os.path.join(ROOT_DIR, 'gcode')
         self.gcode = fileio.from_folder(self.gcode_dir, '.gcode')
 
         self.setup_window = SetupWindow()
@@ -112,11 +77,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
-        self.debug_button = QtWidgets.QPushButton("Open Debug", self)
-        self.debug_button.clicked.connect(debug_window.show)
         self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
         if enable_robot:
             self.robot_controls_button.clicked.connect(self.robot_window.show)
+        else:
+            self.robot_controls_button.setEnabled(False)
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
         self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
         self.run_cv_button = QtWidgets.QPushButton("Run Experiments", self)
@@ -142,7 +107,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.gcode_dropdown = QtWidgets.QComboBox(self)
         self.gcode_dropdown.addItems(list(self.gcode.keys()))
         self.execute_gcode_button = QtWidgets.QPushButton("Execute G-code", self)
-        self.execute_gcode_button.clicked.connect(lambda: self.execute_gcode(self.experiments_list[self.curr_exp_index].gcode))
+        if enable_robot:
+            self.execute_gcode_button.clicked.connect(
+                lambda: self.execute_gcode(self.experiments_list[self.curr_exp_index].gcode))
+        else:
+            self.execute_gcode_button.setEnabled(False)
+
 
         self.save_experiment_button = QtWidgets.QPushButton("New Experiment", self)
         self.save_experiment_button.clicked.connect(self.save_experiment)
@@ -174,7 +144,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layout_top = QtWidgets.QGridLayout()
         layout_top.addWidget(self.setup_button, 0, 0)
-        layout_top.addWidget(self.debug_button, 0, 1)
         layout_top.addWidget(self.robot_controls_button, 0, 2)
         layout_top.addWidget(self.chip_test_button, 0, 3)
         layout_top.addWidget(self.run_cv_button, 0, 4)
@@ -209,6 +178,13 @@ class MainWindow(QtWidgets.QMainWindow):
                          QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout_master.addLayout(layout_middle)
 
+        layout_master.addWidget(
+            QtWidgets.QLabel(
+                f"User: {CONFIG.get('General', 'user')}   Customer: {CONFIG.get('General', 'customer')}   "
+                f"Robot On: {enable_robot}   PAR On: {enable_par}   Counter: {GET_COUNTER_ELECTRODE()}   "
+                f"Reference: {GET_REFERENCE_ELECTRODE()}   Working: {GET_WORKING_ELECTRODE()}"
+                , self))
+
         container = QtWidgets.QWidget()
         container.setLayout(layout_master)
         self.setCentralWidget(container)
@@ -220,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.execute_gcode(exp.gcode)
             self.load_block(exp.block, True)
             if enable_par:
-                run_cv(self.ec_lab, exp.vcfg, index)
+                self.ec_lab.cyclic_voltammetry(exp.vcfg, index)
 
             print("Experiment completed")
             index += 1
@@ -239,7 +215,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.cvs_dropdown.addItems(list(self.cvs.keys()))
             new_index = self.cvs_dropdown.findText(text.split(',')[1].strip())
             self.cvs_dropdown.setCurrentIndex(new_index)
-            self.load_cv(self.cvs[self.cvs_dropdown.currentText()])
 
     def chip_test(self, channel):
         for i in range(7):
@@ -314,6 +289,7 @@ class MainWindow(QtWidgets.QMainWindow):
         print(f"Row changed to {self.experiments_tab.row(i)}")
         self.curr_exp_index = self.experiments_tab.row(i)
         if self.curr_exp_index != -1: # Dont load anything if list is empty
+            self.solution_input.setText(self.experiments_list[self.curr_exp_index].solution)
             self.load_block(self.experiments_list[self.curr_exp_index].block)
             index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
             self.blocks_dropdown.setCurrentIndex(index)
@@ -331,12 +307,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
+        curr_block = self.experiments_list[self.curr_exp_index].block
         self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(),
-                                                                           self.blocks[self.blocks_dropdown.currentText()],
+                                                                           self.blocks[
+                                                                               self.blocks_dropdown.currentText()],
                                                                            "CV",
-                                                                            self.cvs[self.cvs_dropdown.currentText()],
-                                                                           self.gcode[self.gcode_dropdown.currentText()])
-        self.load_block(self.experiments_list[self.curr_exp_index].block)
+                                                                           self.cvs[
+                                                                               self.cvs_dropdown.currentText()],
+                                                                           self.gcode[
+                                                                               self.gcode_dropdown.currentText()])
+        if curr_block.name != self.experiments_list[self.curr_exp_index].block.name:
+            self.load_block(self.experiments_list[self.curr_exp_index].block)
+        else:
+            self.experiments_list[self.curr_exp_index].block = curr_block
         item = self.experiments_tab.item(self.curr_exp_index)
         if item:
             item.setText(str(self.experiments_list[self.curr_exp_index]))

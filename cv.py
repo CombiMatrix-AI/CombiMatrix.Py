@@ -2,12 +2,12 @@ import os
 import sys
 import time
 
-from inc.kbio.kbio_api import KBIO_api
-from inc.kbio.kbio_tech import ECC_parm
-from inc.kbio.kbio_tech import get_experiment_data
-from inc.kbio.kbio_tech import get_info_data
-from inc.kbio.kbio_tech import make_ecc_parm
-from inc.kbio.kbio_tech import make_ecc_parms
+from kbio.kbio_api import KBIO_api
+from kbio.kbio_tech import ECC_parm
+from kbio.kbio_tech import get_experiment_data
+from kbio.kbio_tech import get_info_data
+from kbio.kbio_tech import make_ecc_parm
+from kbio.kbio_tech import make_ecc_parms
 
 class KBio:
     def __init__(self, address):

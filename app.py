@@ -1,4 +1,3 @@
-import configparser
 import sys
 
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QComboBox, QHBoxLayout, \
@@ -6,13 +5,14 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBo
 from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
-from mainwindow import MainWindow
+from definitions import CONFIG, SET_ROBOT_ENABLED, SET_PAR_ENABLED
+from view.electrodesetup import ElectrodeSetupWindow
 from view.debugwindow import DebugWindow
 
 def change_theme(theme):
-    config.set('General', 'theme', theme)
+    CONFIG.set('General', 'theme', theme)
     with open('config.ini', 'w') as configfile:
-        config.write(configfile)
+        CONFIG.write(configfile)
     apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
 
 class LaunchWindow(QWidget):
@@ -21,16 +21,16 @@ class LaunchWindow(QWidget):
 
         # Set window title and geometry
         self.setWindowTitle("Integrated Self-Driving Laboratory Software Launch")
+        self.setGeometry(100, 100, 600, 400)
 
         # Create a label for the title
         title = QLabel("Yonder Lab Control", self)
         title.setProperty('class', 'title')
 
-        user_label = QLabel("User:")
-        user_input = QLineEdit(self)
-
-        customer_label = QLabel("Customer:")
-        customer_input = QLineEdit(self)
+        self.user_input = QLineEdit(self)
+        self.user_input.setText(CONFIG.get('General', 'user'))
+        self.customer_input = QLineEdit(self)
+        self.customer_input.setText(CONFIG.get('General', 'customer'))
 
         # Create checkboxes
         self.robot_checkbox = QCheckBox("Enable Robot Control", self)
@@ -54,10 +54,10 @@ class LaunchWindow(QWidget):
         layout = QVBoxLayout()
 
         layout_top = QGridLayout()
-        layout_top.addWidget(user_label, 0, 0)
-        layout_top.addWidget(user_input, 0, 1)
-        layout_top.addWidget(customer_label, 0, 2)
-        layout_top.addWidget(customer_input, 0, 3)
+        layout_top.addWidget(QLabel("User:", self), 0, 0)
+        layout_top.addWidget(self.user_input, 0, 1)
+        layout_top.addWidget(QLabel("Customer:", self), 0, 2)
+        layout_top.addWidget(self.customer_input, 0, 3)
         layout.addLayout(layout_top)
 
         layout.addWidget(title, 0, Qt.AlignmentFlag.AlignCenter)
@@ -74,23 +74,25 @@ class LaunchWindow(QWidget):
         self.setLayout(layout)
 
     def launch_program(self):
+        CONFIG.set('General', 'user', self.user_input.text())
+        CONFIG.set('General', 'customer', self.customer_input.text())
+        with open('config.ini', 'w') as configfile:
+            CONFIG.write(configfile)
+
         debug_window = DebugWindow()
         debug_window.show()
         sys.stdout = debug_window  # Redirect standard output to text widget
 
-        enable_robot = self.robot_checkbox.isChecked()
-        enable_par = self.par_checkbox.isChecked()
+        SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
+        SET_PAR_ENABLED(self.par_checkbox.isChecked())
 
-        main_window = MainWindow(debug_window, enable_robot, enable_par)
-        main_window.show()
+        electrode_setup = ElectrodeSetupWindow()
+        electrode_setup.show()
 
         self.close()  # Close the launch window
 
 
 if __name__ == "__main__":
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-
     extra = {
         # Font
         'font_family': 'Courier New',
@@ -98,7 +100,7 @@ if __name__ == "__main__":
     }
 
     app = QApplication(sys.argv)
-    theme = config.get('General', 'theme')
+    theme = CONFIG.get('General', 'theme')
     apply_stylesheet(app, theme=theme, extra=extra, css_file='view/stylesheet.css')
 
     window = LaunchWindow()
