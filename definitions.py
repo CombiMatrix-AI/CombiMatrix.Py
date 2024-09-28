@@ -16,7 +16,7 @@ def SET_PAR_ENABLED(value):
     global PAR_ENABLED
     PAR_ENABLED = value
 
-ROBOT_ENABLED = True
+ROBOT_ENABLED = False
 def GET_ROBOT_ENABLED():
     return ROBOT_ENABLED
 

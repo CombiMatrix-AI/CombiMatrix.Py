@@ -52,8 +52,10 @@ class ExperimentWindow(QtWidgets.QMainWindow):
 
         enable_robot = GET_ROBOT_ENABLED()
         enable_par = GET_PAR_ENABLED()
+        enable_adlink = any(electrode.startswith("Chip: CBMX") for electrode in
+                            [GET_COUNTER_ELECTRODE(), GET_WORKING_ELECTRODE(), GET_REFERENCE_ELECTRODE()])
 
-        if platform.system() != 'Darwin':
+        if enable_adlink and platform.system() != 'Darwin':
             self.adlink_card = init_adlink()
         if enable_robot:
             self.grbl = init_robot()
@@ -77,15 +79,21 @@ class ExperimentWindow(QtWidgets.QMainWindow):
 
         self.setup_button = QtWidgets.QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
+
         self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
         if enable_robot:
             self.robot_controls_button.clicked.connect(self.robot_window.show)
         else:
             self.robot_controls_button.setEnabled(False)
+
         self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
-        self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
+        if enable_adlink:
+            self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
+        else:
+            self.chip_test_button.setEnabled(False)
+
         self.run_cv_button = QtWidgets.QPushButton("Run Experiments", self)
-        self.run_cv_button.clicked.connect(lambda: self.run_experiments(enable_robot, enable_par))
+        self.run_cv_button.clicked.connect(lambda: self.run_experiments(enable_robot, enable_adlink, enable_par))
         self.exit_button = QtWidgets.QPushButton("Exit", self)
         self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
 
@@ -96,8 +104,12 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         self.blocks_label = QtWidgets.QLabel("Load Block:", self)
         self.blocks_dropdown = QtWidgets.QComboBox(self)
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
+
         self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
-        self.tile_block_button.clicked.connect(lambda: self.tile_block())
+        if enable_adlink:
+            self.tile_block_button.clicked.connect(lambda: self.tile_block())
+        else:
+            self.tile_block_button.setEnabled(False)
 
         self.cvs_label = QtWidgets.QLabel("Load CV Config:", self)
         self.cvs_dropdown = QtWidgets.QComboBox(self)
@@ -106,6 +118,7 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         self.gcode_label = QtWidgets.QLabel("Load G-code:", self)
         self.gcode_dropdown = QtWidgets.QComboBox(self)
         self.gcode_dropdown.addItems(list(self.gcode.keys()))
+
         self.execute_gcode_button = QtWidgets.QPushButton("Execute G-code", self)
         if enable_robot:
             self.execute_gcode_button.clicked.connect(
@@ -125,7 +138,8 @@ class ExperimentWindow(QtWidgets.QMainWindow):
 
         self.curr_exp_index = 0
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
-        self.experiments_list = [experiment.Experiment("null", self.blocks[self.blocks_dropdown.currentText()],
+        self.experiments_list = [experiment.Experiment("null",
+                                            self.blocks[self.blocks_dropdown.currentText()],
                                             "CV",
                                             self.cvs[self.cvs_dropdown.currentText()],
                                             self.gcode[self.gcode_dropdown.currentText()])]
@@ -189,12 +203,14 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         container.setLayout(layout_master)
         self.setCentralWidget(container)
 
-    def run_experiments(self, enable_robot, enable_par):
+
+    def run_experiments(self, enable_robot, enable_adlink, enable_par):
         index = 0
         for exp in self.experiments_list:
             if enable_robot:
                 self.execute_gcode(exp.gcode)
-            self.load_block(exp.block, True)
+            if enable_adlink:
+                self.load_block(exp.block, True)
             if enable_par:
                 self.ec_lab.cyclic_voltammetry(exp.vcfg, index)
 

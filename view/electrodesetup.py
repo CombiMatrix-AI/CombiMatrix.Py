@@ -25,7 +25,7 @@ class ChipSelectionDialog(QDialog):
         wafer_design_label = QLabel("Wafer Design:", self)
         layout.addWidget(wafer_design_label)
         self.wafer_design = QComboBox(self)
-        self.wafer_design.addItems(["CBMX", "NDC-WB", "NDC-WF", "CMAI-WA"])
+        self.wafer_design.addItems(["CBMX", "NDC-WB", "CMAI-WA"])
         self.wafer_design.setFixedWidth(200)
         self.wafer_design.currentIndexChanged.connect(self.updateLead)
         layout.addWidget(self.wafer_design)
@@ -214,7 +214,7 @@ class ElectrodeSetupWindow(QMainWindow):
             any(text.startswith(pattern) for pattern in patterns))
         if matches > 1:
             QMessageBox.warning(self, "Chip Selection Error",
-                        "CBMX/NDC-WF chip can only be used on one electrode per experiment.")
+                        "CBMX chip can only be used on one electrode per experiment.")
             return
         else:
             SET_COUNTER_ELECTRODE(counter_text)
