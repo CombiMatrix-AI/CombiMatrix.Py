@@ -1,6 +1,7 @@
 import os
 from PyQt6 import QtWidgets, QtCore
 
+from definitions import ROOT_DIR
 from view.gridwidget import GridWidget
 
 
@@ -155,7 +156,7 @@ class SetupWindow(QtWidgets.QMainWindow):
         )
 
         # Ensure the blocks directory exists
-        blocks_dir = os.path.join(os.path.dirname(__file__), '..', 'blocks')
+        blocks_dir = os.path.join(ROOT_DIR, 'blocks')
 
         # Write the content to a .block file in the blocks folder
         with open(os.path.join(blocks_dir, f"{block_name}.block"), "w") as block_file:

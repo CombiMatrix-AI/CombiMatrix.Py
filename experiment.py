@@ -52,6 +52,6 @@ class Experiment:
                                       self.block.num_cols, new_start_row, new_start_col, self.block.definition)
 
     def __str__(self):
-        return (f'Solution: {self.solution[:9]:<10} Block: {self.block.name[:6]:<7} Mode: {self.technique[:6]:<7} '
+        return (f'{self.solution[:19]:<20} Block: {self.block.name[:6]:<7} Mode: {self.technique[:6]:<7} '
                 f'Vcfg: {self.vcfg.name[:6]:<7} Well: {self.gcode.name[:6]:<7}')
 
