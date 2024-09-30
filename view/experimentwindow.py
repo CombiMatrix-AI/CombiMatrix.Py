@@ -1,7 +1,9 @@
 import platform
 import os
 import random
-from PyQt6 import QtWidgets, QtCore
+from PyQt6 import QtCore
+from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLayout, QWidget, QDialog, QMainWindow, \
+    QApplication, QComboBox, QListWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QDialogButtonBox
 from grbl_streamer import GrblStreamer
 import time
 
@@ -11,7 +13,7 @@ from definitions import ROOT_DIR, CONFIG, GET_ROBOT_ENABLED, GET_PAR_ENABLED, GE
     GET_REFERENCE_ELECTRODE, GET_WORKING_ELECTRODE
 
 if platform.system() != 'Darwin':
-    from cv import KBio
+    from par import PAR
     from adlink import Adlink
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
@@ -30,7 +32,7 @@ def init_adlink():
 
 def init_par():
     kbio_port = CONFIG.get('Ports', 'par_port')
-    ec_lab = KBio(kbio_port)
+    ec_lab = PAR(kbio_port)
     print("DEBUG MESSAGE: EC-Lab PAR Initialized")
     return ec_lab
 
@@ -46,44 +48,29 @@ def init_robot():
     return grbl
 
 
-class SolutionDialog(QtWidgets.QDialog):
+class SolutionDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle("Enter Solution Details")
 
         # Create input fields
-        self.cas_label = QtWidgets.QLabel("CAS #:", self)
-        self.cas_input = QtWidgets.QLineEdit(self)
-
-        self.stock_label = QtWidgets.QLabel("Stock #:", self)
-        self.stock_input = QtWidgets.QLineEdit(self)
-
-        self.amount_label = QtWidgets.QLabel("Amount (mL):", self)
-        self.amount_input = QtWidgets.QLineEdit(self)
-
-        self.concentration_label = QtWidgets.QLabel("Concentration (M):", self)
-        self.concentration_input = QtWidgets.QLineEdit(self)
-
-        # Create buttons
-        self.ok_button = QtWidgets.QPushButton("OK", self)
-        self.ok_button.clicked.connect(self.accept)
-
-        self.cancel_button = QtWidgets.QPushButton("Cancel", self)
-        self.cancel_button.clicked.connect(self.reject)
+        self.cas_input = QLineEdit(self)
+        self.stock_input = QLineEdit(self)
+        self.amount_input = QLineEdit(self)
+        self.concentration_input = QLineEdit(self)
 
         # Set layout
-        layout = QtWidgets.QFormLayout()
-        layout.addRow(self.cas_label, self.cas_input)
-        layout.addRow(self.stock_label, self.stock_input)
-        layout.addRow(self.amount_label, self.amount_input)
-        layout.addRow(self.concentration_label, self.concentration_input)
+        layout = QFormLayout()
+        layout.addRow(QLabel("CAS #:", self), self.cas_input)
+        layout.addRow(QLabel("Stock #:", self), self.stock_input)
+        layout.addRow(QLabel("Amount (mL):", self), self.amount_input)
+        layout.addRow(QLabel("Concentration (M):", self), self.concentration_input)
 
-        button_layout = QtWidgets.QHBoxLayout()
-        button_layout.addStretch(1)
-        button_layout.addWidget(self.ok_button)
-        button_layout.addWidget(self.cancel_button)
-        layout.addRow(button_layout)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel, self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addRow(buttons)
 
         self.setLayout(layout)
 
@@ -102,7 +89,7 @@ class SolutionDialog(QtWidgets.QDialog):
 #     data = dialog.get_data()
 #     print(data)
 
-class ExperimentWindow(QtWidgets.QMainWindow):
+class ExperimentWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
@@ -134,61 +121,58 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         if enable_robot:
             self.robot_window = RobotWindow(self.grbl)
 
-        self.setup_button = QtWidgets.QPushButton("Setup", self)
+        self.setup_button = QPushButton("Setup", self)
         self.setup_button.clicked.connect(self.setup_window.show)
 
-        self.robot_controls_button = QtWidgets.QPushButton("Robot Controls", self)
+        self.robot_controls_button = QPushButton("Robot Controls", self)
         if enable_robot:
             self.robot_controls_button.clicked.connect(self.robot_window.show)
         else:
             self.robot_controls_button.setEnabled(False)
 
-        self.chip_test_button = QtWidgets.QPushButton("Run Chip Test", self)
+        self.chip_test_button = QPushButton("Run Chip Test", self)
         if enable_adlink:
             self.chip_test_button.clicked.connect(lambda: self.chip_test(1))
         else:
             self.chip_test_button.setEnabled(False)
 
-        self.run_cv_button = QtWidgets.QPushButton("Run Experiments", self)
+        self.run_cv_button = QPushButton("Run Experiments", self)
         self.run_cv_button.clicked.connect(lambda: self.run_experiments(enable_robot, enable_adlink, enable_par))
-        self.exit_button = QtWidgets.QPushButton("Exit", self)
-        self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
+        self.exit_button = QPushButton("Exit", self)
+        self.exit_button.clicked.connect(QApplication.instance().quit)
 
-        self.solution_button = QtWidgets.QPushButton("Enter Solution", self)
+        self.solution_button = QPushButton("Enter Solution", self)
         self.solution_button.clicked.connect(self.enter_solution)
-        self.solution_input = QtWidgets.QLineEdit(self)
+        self.solution_input = QLineEdit(self)
         self.solution_input.setReadOnly(True)
 
-        self.blocks_label = QtWidgets.QLabel("Load Block:", self)
-        self.blocks_dropdown = QtWidgets.QComboBox(self)
+        self.blocks_dropdown = QComboBox(self)
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
 
-        self.tile_block_button = QtWidgets.QPushButton("Tile Block", self)
+        self.tile_block_button = QPushButton("Tile Block", self)
         if enable_adlink:
             self.tile_block_button.clicked.connect(lambda: self.tile_block())
         else:
             self.tile_block_button.setEnabled(False)
 
-        self.cvs_label = QtWidgets.QLabel("Load CV Config:", self)
-        self.cvs_dropdown = QtWidgets.QComboBox(self)
+        self.cvs_dropdown = QComboBox(self)
         self.cvs_dropdown.addItems(list(self.cvs.keys()))
 
-        self.gcode_label = QtWidgets.QLabel("Load G-code:", self)
-        self.gcode_dropdown = QtWidgets.QComboBox(self)
+        self.gcode_dropdown = QComboBox(self)
         self.gcode_dropdown.addItems(list(self.gcode.keys()))
 
-        self.execute_gcode_button = QtWidgets.QPushButton("Execute G-code", self)
+        self.execute_gcode_button = QPushButton("Execute G-code", self)
         if enable_robot:
             self.execute_gcode_button.clicked.connect(
                 lambda: self.execute_gcode(self.experiments_list[self.curr_exp_index].gcode))
         else:
             self.execute_gcode_button.setEnabled(False)
 
-        self.save_experiment_button = QtWidgets.QPushButton("New Experiment", self)
+        self.save_experiment_button = QPushButton("New Experiment", self)
         self.save_experiment_button.clicked.connect(self.save_experiment)
-        self.update_experiment_button = QtWidgets.QPushButton("Update Experiment", self)
+        self.update_experiment_button = QPushButton("Update Experiment", self)
         self.update_experiment_button.clicked.connect(self.update_experiment)
-        self.delete_experiment_button = QtWidgets.QPushButton("Delete Experiment", self)
+        self.delete_experiment_button = QPushButton("Delete Experiment", self)
         self.delete_experiment_button.clicked.connect(self.delete_experiment)
 
         self.grid_widget = GridWidget(5)
@@ -202,43 +186,42 @@ class ExperimentWindow(QtWidgets.QMainWindow):
                                                        self.gcode[self.gcode_dropdown.currentText()])]
         self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
-        self.experiments_tab = QtWidgets.QListWidget()
+        self.experiments_tab = QListWidget()
         self.experiments_tab.currentItemChanged.connect(self.exp_index_changed)
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
         self.experiments_tab.setFixedSize(700, 500)
 
         ############################### WINDOW LAYOUT #################################
 
-        layout_master = QtWidgets.QVBoxLayout()
+        layout_master = QVBoxLayout()
 
-        layout_top = QtWidgets.QGridLayout()
+        layout_top = QGridLayout()
         layout_top.addWidget(self.setup_button, 0, 0)
         layout_top.addWidget(self.robot_controls_button, 0, 2)
         layout_top.addWidget(self.chip_test_button, 0, 3)
         layout_top.addWidget(self.run_cv_button, 0, 4)
-        spacer_top = QtWidgets.QSpacerItem(100, 0, QtWidgets.QSizePolicy.Policy.Fixed,
-                                           QtWidgets.QSizePolicy.Policy.Fixed)
+        spacer_top = QSpacerItem(100, 0, QSizePolicy.Policy.Fixed,
+                                 QSizePolicy.Policy.Fixed)
         layout_top.addItem(spacer_top, 0, 5)
         layout_top.addWidget(self.exit_button, 0, 6)
         layout_master.addLayout(layout_top)
-
-        layout_middle = QtWidgets.QHBoxLayout()
-        layout_middle_grid = QtWidgets.QGridLayout()
+        layout_middle = QHBoxLayout()
+        layout_middle_grid = QGridLayout()
         layout_middle_grid.addWidget(self.solution_button, 0, 0)
         layout_middle_grid.addWidget(self.solution_input, 0, 1, 1, 2)
-        layout_middle_grid.addWidget(self.blocks_label, 1, 0)
+        layout_middle_grid.addWidget(QLabel("Load Block:", self), 1, 0)
         layout_middle_grid.addWidget(self.blocks_dropdown, 1, 1)
         layout_middle_grid.addWidget(self.tile_block_button, 1, 2)
-        layout_middle_grid.addWidget(self.cvs_label, 2, 0)
+        layout_middle_grid.addWidget(QLabel("Load CV Config:", self), 2, 0)
         layout_middle_grid.addWidget(self.cvs_dropdown, 2, 1)
-        layout_middle_grid.addWidget(self.gcode_label, 3, 0)
+        layout_middle_grid.addWidget(QLabel("Load G-code:", self), 3, 0)
         layout_middle_grid.addWidget(self.gcode_dropdown, 3, 1)
         layout_middle_grid.addWidget(self.execute_gcode_button, 3, 2)
         layout_middle_grid.addWidget(self.save_experiment_button, 4, 0)
         layout_middle_grid.addWidget(self.update_experiment_button, 4, 1)
         layout_middle_grid.addWidget(self.delete_experiment_button, 4, 2)
-        spacer = QtWidgets.QSpacerItem(125, 125, QtWidgets.QSizePolicy.Policy.Fixed,
-                                       QtWidgets.QSizePolicy.Policy.Minimum)
+        spacer = QSpacerItem(125, 125, QSizePolicy.Policy.Fixed,
+                             QSizePolicy.Policy.Minimum)
         layout_middle_grid.addItem(spacer, 5, 0)
         layout_middle_grid.addItem(spacer, 5, 1)
         layout_middle.addLayout(layout_middle_grid)
@@ -248,19 +231,19 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         layout_master.addLayout(layout_middle)
 
         layout_master.addWidget(
-            QtWidgets.QLabel(
+            QLabel(
                 f"User: {CONFIG.get('General', 'user')}   Customer: {CONFIG.get('General', 'customer')}   "
                 f"Robot On: {enable_robot}   PAR On: {enable_par}   Counter: {GET_COUNTER_ELECTRODE()}   "
                 f"Reference: {GET_REFERENCE_ELECTRODE()}   Working: {GET_WORKING_ELECTRODE()}"
                 , self))
 
-        container = QtWidgets.QWidget()
+        container = QWidget()
         container.setLayout(layout_master)
         self.setCentralWidget(container)
 
     def enter_solution(self):
         dialog = SolutionDialog(self)
-        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             data = dialog.get_data()
             self.solution_input.setText(f"{data['cas']}, {data['stock']}, {data['amount']}, {data['concentration']}")
             print(data)  # Add more logic here as needed
