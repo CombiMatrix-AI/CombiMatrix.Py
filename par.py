@@ -9,7 +9,7 @@ from kbio.kbio_tech import get_info_data
 from kbio.kbio_tech import make_ecc_parm
 from kbio.kbio_tech import make_ecc_parms
 
-class PAR:
+class KBio:
     def __init__(self, address):
         self.api = KBIO_api(os.path.join(os.path.dirname(__file__), "lib", "kbio", "EClib64.dll"))  # Init self.api
         self.channel = 5 # TODO: GENERALIZE LATER

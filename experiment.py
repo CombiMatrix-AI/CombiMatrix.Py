@@ -2,19 +2,6 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class CV:
-    name: str
-    start: float
-    end: float
-    E2: float
-    Ef: float
-    rate: float
-    step: float
-    N_cycles: int
-    begin_measuring_I: float
-    End_measuring_I: float
-
-@dataclass
 class Block:
     name: str
     num_rows: int
@@ -33,7 +20,7 @@ class Experiment:
         self.solution: str = solution
         self.block: Block = block
         self.technique: str = technique
-        self.vcfg: CV = vcfg
+        self.vcfg = vcfg
         self.gcode: Gcode = gcode
 
     def tile_block(self):
