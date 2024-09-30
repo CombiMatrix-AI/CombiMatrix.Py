@@ -45,6 +45,63 @@ def init_robot():
     print("DEBUG MESSAGE: GRBL Alarm Turned off")
     return grbl
 
+
+class SolutionDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Enter Solution Details")
+
+        # Create input fields
+        self.cas_label = QtWidgets.QLabel("CAS #:", self)
+        self.cas_input = QtWidgets.QLineEdit(self)
+
+        self.stock_label = QtWidgets.QLabel("Stock #:", self)
+        self.stock_input = QtWidgets.QLineEdit(self)
+
+        self.amount_label = QtWidgets.QLabel("Amount (mL):", self)
+        self.amount_input = QtWidgets.QLineEdit(self)
+
+        self.concentration_label = QtWidgets.QLabel("Concentration (M):", self)
+        self.concentration_input = QtWidgets.QLineEdit(self)
+
+        # Create buttons
+        self.ok_button = QtWidgets.QPushButton("OK", self)
+        self.ok_button.clicked.connect(self.accept)
+
+        self.cancel_button = QtWidgets.QPushButton("Cancel", self)
+        self.cancel_button.clicked.connect(self.reject)
+
+        # Set layout
+        layout = QtWidgets.QFormLayout()
+        layout.addRow(self.cas_label, self.cas_input)
+        layout.addRow(self.stock_label, self.stock_input)
+        layout.addRow(self.amount_label, self.amount_input)
+        layout.addRow(self.concentration_label, self.concentration_input)
+
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addStretch(1)
+        button_layout.addWidget(self.ok_button)
+        button_layout.addWidget(self.cancel_button)
+        layout.addRow(button_layout)
+
+        self.setLayout(layout)
+
+    def get_data(self):
+        return {
+            'cas': self.cas_input.text(),
+            'stock': self.stock_input.text(),
+            'amount': self.amount_input.text(),
+            'concentration': self.concentration_input.text()
+        }
+
+
+# Example usage:
+# dialog = SolutionDialog()
+# if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+#     data = dialog.get_data()
+#     print(data)
+
 class ExperimentWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -97,9 +154,10 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         self.exit_button = QtWidgets.QPushButton("Exit", self)
         self.exit_button.clicked.connect(QtWidgets.QApplication.instance().quit)
 
-        self.solution_input_label = QtWidgets.QLabel("Enter Solution:", self)
+        self.solution_button = QtWidgets.QPushButton("Enter Solution", self)
+        self.solution_button.clicked.connect(self.enter_solution)
         self.solution_input = QtWidgets.QLineEdit(self)
-        self.solution_input.setPlaceholderText("Solution")
+        self.solution_input.setReadOnly(True)
 
         self.blocks_label = QtWidgets.QLabel("Load Block:", self)
         self.blocks_dropdown = QtWidgets.QComboBox(self)
@@ -126,7 +184,6 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         else:
             self.execute_gcode_button.setEnabled(False)
 
-
         self.save_experiment_button = QtWidgets.QPushButton("New Experiment", self)
         self.save_experiment_button.clicked.connect(self.save_experiment)
         self.update_experiment_button = QtWidgets.QPushButton("Update Experiment", self)
@@ -139,18 +196,16 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         self.curr_exp_index = 0
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list = [experiment.Experiment("null",
-                                            self.blocks[self.blocks_dropdown.currentText()],
-                                            "CV",
-                                            self.cvs[self.cvs_dropdown.currentText()],
-                                            self.gcode[self.gcode_dropdown.currentText()])]
+                                                       self.blocks[self.blocks_dropdown.currentText()],
+                                                       "CV",
+                                                       self.cvs[self.cvs_dropdown.currentText()],
+                                                       self.gcode[self.gcode_dropdown.currentText()])]
         self.load_block(self.blocks[self.blocks_dropdown.currentText()])
-
 
         self.experiments_tab = QtWidgets.QListWidget()
         self.experiments_tab.currentItemChanged.connect(self.exp_index_changed)
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
         self.experiments_tab.setFixedSize(700, 500)
-
 
         ############################### WINDOW LAYOUT #################################
 
@@ -162,14 +217,14 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         layout_top.addWidget(self.chip_test_button, 0, 3)
         layout_top.addWidget(self.run_cv_button, 0, 4)
         spacer_top = QtWidgets.QSpacerItem(100, 0, QtWidgets.QSizePolicy.Policy.Fixed,
-                                       QtWidgets.QSizePolicy.Policy.Fixed)
+                                           QtWidgets.QSizePolicy.Policy.Fixed)
         layout_top.addItem(spacer_top, 0, 5)
         layout_top.addWidget(self.exit_button, 0, 6)
         layout_master.addLayout(layout_top)
 
         layout_middle = QtWidgets.QHBoxLayout()
         layout_middle_grid = QtWidgets.QGridLayout()
-        layout_middle_grid.addWidget(self.solution_input_label, 0, 0)
+        layout_middle_grid.addWidget(self.solution_button, 0, 0)
         layout_middle_grid.addWidget(self.solution_input, 0, 1, 1, 2)
         layout_middle_grid.addWidget(self.blocks_label, 1, 0)
         layout_middle_grid.addWidget(self.blocks_dropdown, 1, 1)
@@ -189,7 +244,7 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         layout_middle.addLayout(layout_middle_grid)
         layout_middle.addWidget(self.experiments_tab)
         layout_middle.addWidget(self.grid_widget, 0,
-                         QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
+                                QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout_master.addLayout(layout_middle)
 
         layout_master.addWidget(
@@ -203,6 +258,12 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         container.setLayout(layout_master)
         self.setCentralWidget(container)
 
+    def enter_solution(self):
+        dialog = SolutionDialog(self)
+        if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            data = dialog.get_data()
+            self.solution_input.setText(f"{data['cas']}, {data['stock']}, {data['amount']}, {data['concentration']}")
+            print(data)  # Add more logic here as needed
 
     def run_experiments(self, enable_robot, enable_adlink, enable_par):
         index = 0
@@ -258,7 +319,7 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         for row in range(64):
             for column in range(16):
                 self.grid_widget.set_square_color(row, column,
-                                                      chipmap_in[row][column], chipmap_out[row][column])
+                                                  chipmap_in[row][column], chipmap_out[row][column])
 
         if chipmap_in == chipmap_out:
             print(f"Test {i} Passed")
@@ -289,7 +350,7 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         if item:
             item.setText(str(self.experiments_list[self.curr_exp_index]))
 
-    def load_block(self, block, set_card = False):
+    def load_block(self, block, set_card=False):
         # Logic for loading the block
         self.grid_widget.clear()
         current_map = [[0] * 16 for _ in range(64)]
@@ -301,10 +362,10 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         if set_card:
             self.adlink_card.set_chip_map(1, current_map)
 
-    def exp_index_changed(self, i): # Not an index, i is a QListWidgetItem
+    def exp_index_changed(self, i):  # Not an index, i is a QListWidgetItem
         print(f"Row changed to {self.experiments_tab.row(i)}")
         self.curr_exp_index = self.experiments_tab.row(i)
-        if self.curr_exp_index != -1: # Dont load anything if list is empty
+        if self.curr_exp_index != -1:  # Dont load anything if list is empty
             self.solution_input.setText(self.experiments_list[self.curr_exp_index].solution)
             self.load_block(self.experiments_list[self.curr_exp_index].block)
             index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
@@ -318,7 +379,8 @@ class ExperimentWindow(QtWidgets.QMainWindow):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list.append(
             experiment.Experiment(self.solution_input.text(), self.blocks[self.blocks_dropdown.currentText()], "CV",
-                                                self.cvs[self.cvs_dropdown.currentText()], self.gcode[self.gcode_dropdown.currentText()]))
+                                  self.cvs[self.cvs_dropdown.currentText()],
+                                  self.gcode[self.gcode_dropdown.currentText()]))
         self.experiments_tab.addItem(str(self.experiments_list[-1]))
 
     def update_experiment(self):

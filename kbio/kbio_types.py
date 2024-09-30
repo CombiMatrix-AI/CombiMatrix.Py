@@ -22,7 +22,7 @@ from ctypes import c_uint32
 from dataclasses import dataclass
 from enum import Enum
 
-from cv.c_utils import POD
+from kbio.c_utils import POD
 
 # ==============================================================================#
 

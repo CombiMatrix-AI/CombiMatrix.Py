@@ -7,8 +7,8 @@ and decoding experiment records.
 
 from dataclasses import dataclass
 
-import cv.kbio_types as KBIO
-from cv.tech_types import TECH_ID
+import kbio.kbio_types as KBIO
+from kbio.tech_types import TECH_ID
 
 
 @dataclass
