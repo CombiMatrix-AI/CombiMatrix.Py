@@ -81,7 +81,7 @@ class LaunchWindow(QWidget):
 
         debug_window = DebugWindow()
         debug_window.show()
-        sys.stdout = debug_window  # Redirect standard output to text widget
+        # sys.stdout = debug_window  # Redirect standard output to text widget
 
         SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
         SET_PAR_ENABLED(self.par_checkbox.isChecked())
