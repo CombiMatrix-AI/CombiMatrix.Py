@@ -128,6 +128,7 @@ def get_experiment_data(api, data, tech_name, board_type):
             t = current_values.TimeBase * t_rel
 
             parsed_row = {"t": t, "Ewe": Ewe, "Iwe": Iwe, "cycle": cycle}
+
         elif tech_name == "CV":
             inx = ix + data_info.NbCols
             t_high, t_low, *row = data_record[ix:inx]

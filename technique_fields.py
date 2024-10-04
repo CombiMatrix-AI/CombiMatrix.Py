@@ -8,6 +8,7 @@ class OCV:
 
 @dataclass
 class CV:
+    name: str = ''
     vs_init: list[bool] = field(default_factory=lambda: [False] * 5)
     v_step: list[float] = field(default_factory=lambda: [0.0] * 5)
     scan_rate: list[float] = field(default_factory=lambda: [0.0] * 5)

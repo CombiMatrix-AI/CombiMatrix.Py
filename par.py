@@ -1,6 +1,8 @@
 import os
 import sys
 import time
+import matplotlib.pyplot as plt
+import pandas as pd
 
 from kbio.kbio_api import KBIO_api
 from kbio.kbio_tech import ECC_parm
@@ -8,8 +10,7 @@ from kbio.kbio_tech import get_experiment_data
 from kbio.kbio_tech import get_info_data
 from kbio.kbio_tech import make_ecc_parm
 from kbio.kbio_tech import make_ecc_parms
-import matplotlib.pyplot as plt
-import pandas as pd
+
 
 class KBio:
     def __init__(self, address):
@@ -36,7 +37,7 @@ class KBio:
             print("> kernel must be loaded in order to run the experiment")
             sys.exit(-1)
 
-    def cyclic_voltammetry(self, cv, index):
+    def cyclic_voltammetry(self, cv, index): #TODO: GENERALIZE
         vs_init = [False, False, False, False, False] # TODO: fix CV data object = cv.vs_init
         v_step = [0.0, 1.3, 0.0, 0.0, 0.6] # TODO: fix CV data object = cv.v_step
         scan_rate = [200, 200, 200, 200, 200] ## TODO: fix CV data object =  cv.scan_rate
@@ -82,7 +83,7 @@ class KBio:
 
         self.api.StartChannel(self.id, self.channel)
 
-        # experiment loop # TODO: FIX PRINTING
+        # experiment loop
         filename = "cv" + str(index)
         csvfile = open(f"{filename}.csv", "w")
         csvfile.write("t (s),Ece (V),Iwe (A),Ewe (V),cycle\n")

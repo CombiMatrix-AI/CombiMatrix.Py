@@ -39,6 +39,8 @@ class LaunchWindow(QWidget):
         # Create a button for launching the program
         launch_button = QPushButton("Launch Program", self)
         launch_button.clicked.connect(self.launch_program)
+        combi_button = QPushButton("Program Combi Chip Only", self)
+        #combi_button.clicked.connect(self.launch_program)
 
         theme_label = QLabel("Theme:", self)
         theme_dropdown = QComboBox(self)
@@ -63,7 +65,11 @@ class LaunchWindow(QWidget):
         layout.addWidget(title, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.robot_checkbox)
         layout.addWidget(self.par_checkbox)
-        layout.addWidget(launch_button)
+
+        layout_buttons = QHBoxLayout()
+        layout_buttons.addWidget(launch_button)
+        layout_buttons.addWidget(combi_button)
+        layout.addLayout(layout_buttons)
 
         layout_bottom = QHBoxLayout()
         layout_bottom.addWidget(theme_label, 0, Qt.AlignmentFlag.AlignLeft)

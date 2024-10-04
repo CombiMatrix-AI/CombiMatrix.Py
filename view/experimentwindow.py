@@ -11,13 +11,13 @@ import experiment
 import fileio
 from definitions import ROOT_DIR, CONFIG, GET_ROBOT_ENABLED, GET_PAR_ENABLED, GET_COUNTER_ELECTRODE, \
     GET_REFERENCE_ELECTRODE, GET_WORKING_ELECTRODE
+from view.create_block import CreateBlockWindow
 
 if platform.system() != 'Darwin':
     from par import PAR
     from adlink import Adlink
 from view.gridwidget import GridWidget
 from view.robotwindow import RobotWindow
-from view.setupwindow import SetupWindow
 
 def grbl_callback(eventstring, *data):
     args = []
@@ -32,9 +32,9 @@ def init_adlink():
 
 def init_par():
     kbio_port = CONFIG.get('Ports', 'par_port')
-    ec_lab = PAR(kbio_port)
+    par = PAR(kbio_port)
     print("DEBUG MESSAGE: EC-Lab PAR Initialized")
-    return ec_lab
+    return par
 
 def init_robot():
     grbl = GrblStreamer(grbl_callback)
@@ -104,25 +104,25 @@ class ExperimentWindow(QMainWindow):
         if enable_robot:
             self.grbl = init_robot()
         if enable_par:
-            self.ec_lab = init_par()
+            self.par = init_par()
 
         print("DEBUG MESSAGE: All Machines Initialized")
 
         self.blocks_dir = os.path.join(ROOT_DIR, 'blocks')
         self.blocks = fileio.from_folder(self.blocks_dir, '.block')
-        self.cv_dir = os.path.join(ROOT_DIR, 'vcfgs', 'cv')
-        self.cvs = fileio.from_folder(self.cv_dir, '.cv.vcfg')
+        self.vcfg_dir = os.path.join(ROOT_DIR, 'vcfgs')
+        self.vcfgs = fileio.from_folder(self.vcfg_dir, '.vcfg')
         self.gcode_dir = os.path.join(ROOT_DIR, 'gcode')
         self.gcode = fileio.from_folder(self.gcode_dir, '.gcode')
 
-        self.setup_window = SetupWindow()
-        self.setup_window.item_created.connect(self.item_created)
+        self.create_block_window = CreateBlockWindow()
+        self.create_block_window.item_created.connect(self.item_created)
 
         if enable_robot:
             self.robot_window = RobotWindow(self.grbl)
 
-        self.setup_button = QPushButton("Setup", self)
-        self.setup_button.clicked.connect(self.setup_window.show)
+        self.create_block_button = QPushButton("Create Block", self)
+        self.create_block_button.clicked.connect(self.create_block_window.show)
 
         self.robot_controls_button = QPushButton("Robot Controls", self)
         if enable_robot:
@@ -156,7 +156,7 @@ class ExperimentWindow(QMainWindow):
             self.tile_block_button.setEnabled(False)
 
         self.cvs_dropdown = QComboBox(self)
-        self.cvs_dropdown.addItems(list(self.cvs.keys()))
+        self.cvs_dropdown.addItems(list(self.vcfgs.keys()))
 
         self.gcode_dropdown = QComboBox(self)
         self.gcode_dropdown.addItems(list(self.gcode.keys()))
@@ -181,8 +181,7 @@ class ExperimentWindow(QMainWindow):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list = [experiment.Experiment("null",
                                                        self.blocks[self.blocks_dropdown.currentText()],
-                                                       "CV",
-                                                       self.cvs[self.cvs_dropdown.currentText()],
+                                                       self.vcfgs[self.cvs_dropdown.currentText()],
                                                        self.gcode[self.gcode_dropdown.currentText()])]
         self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
@@ -196,7 +195,7 @@ class ExperimentWindow(QMainWindow):
         layout_master = QVBoxLayout()
 
         layout_top = QGridLayout()
-        layout_top.addWidget(self.setup_button, 0, 0)
+        layout_top.addWidget(self.create_block_button, 0, 0)
         layout_top.addWidget(self.robot_controls_button, 0, 2)
         layout_top.addWidget(self.chip_test_button, 0, 3)
         layout_top.addWidget(self.run_cv_button, 0, 4)
@@ -256,7 +255,7 @@ class ExperimentWindow(QMainWindow):
             if enable_adlink:
                 self.load_block(exp.block, True)
             if enable_par:
-                self.ec_lab.cyclic_voltammetry(exp.vcfg, index)
+                self.par.cyclic_voltammetry(exp.vcfg, index)
 
             print("Experiment completed")
             index += 1
@@ -270,9 +269,9 @@ class ExperimentWindow(QMainWindow):
             self.blocks_dropdown.setCurrentIndex(new_index)
             self.load_block(self.blocks[self.blocks_dropdown.currentText()])
         elif text.split(',')[0].strip() == "CV Config Created":
-            self.cvs = fileio.from_folder(self.cv_dir, '.cv.vcfg')
+            self.vcfgs = fileio.from_folder(self.vcfg_dir, '.cv.vcfg')
             self.cvs_dropdown.clear()
-            self.cvs_dropdown.addItems(list(self.cvs.keys()))
+            self.cvs_dropdown.addItems(list(self.vcfgs.keys()))
             new_index = self.cvs_dropdown.findText(text.split(',')[1].strip())
             self.cvs_dropdown.setCurrentIndex(new_index)
 
@@ -361,8 +360,8 @@ class ExperimentWindow(QMainWindow):
     def save_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list.append(
-            experiment.Experiment(self.solution_input.text(), self.blocks[self.blocks_dropdown.currentText()], "CV",
-                                  self.cvs[self.cvs_dropdown.currentText()],
+            experiment.Experiment(self.solution_input.text(), self.blocks[self.blocks_dropdown.currentText()],
+                                  self.vcfgs[self.cvs_dropdown.currentText()],
                                   self.gcode[self.gcode_dropdown.currentText()]))
         self.experiments_tab.addItem(str(self.experiments_list[-1]))
 
@@ -372,8 +371,7 @@ class ExperimentWindow(QMainWindow):
         self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(),
                                                                            self.blocks[
                                                                                self.blocks_dropdown.currentText()],
-                                                                           "CV",
-                                                                           self.cvs[
+                                                                           self.vcfgs[
                                                                                self.cvs_dropdown.currentText()],
                                                                            self.gcode[
                                                                                self.gcode_dropdown.currentText()])
