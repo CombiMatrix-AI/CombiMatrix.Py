@@ -28,7 +28,7 @@ def from_folder(path, suffix):
                     file = experiment.Block(*from_file(file_path, 'Block'))
                 elif suffix == ".vcfg":
                     values = from_file(file_path)
-                    file = experiment.Vcfg(values[0], values[1], technique_fields.CV(*values[2:]))
+                    file = experiment.Vcfg(values[0], values[1], getattr(technique_fields, values[1])(*values[2:]))
                 elif suffix == ".gcode":
                     filename = os.path.basename(file_path)
                     file = experiment.Gcode(filename.split('.')[0], filename)

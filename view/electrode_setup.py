@@ -5,7 +5,7 @@ from PyQt6 import QtCore
 import pandas as pd
 
 from definitions import ROOT_DIR, SET_COUNTER_ELECTRODE, SET_WORKING_ELECTRODE, SET_REFERENCE_ELECTRODE
-from view.experimentwindow import ExperimentWindow
+from view.experiment_window import ExperimentWindow
 
 # Load the Excel sheet
 electrodes_df = pd.read_excel(os.path.join(ROOT_DIR, "database", "Electrodes.xlsx"))

@@ -1,9 +1,6 @@
 import os
 from PyQt6 import QtWidgets, QtCore
 
-from definitions import ROOT_DIR
-from view.gridwidget import GridWidget
-
 
 class CreateVcfgWindow(QtWidgets.QMainWindow):
     item_created = QtCore.pyqtSignal(str)
@@ -13,10 +10,12 @@ class CreateVcfgWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Setup Window")
         self.tab_widget = QtWidgets.QTabWidget(self)
 
+        ##############################################################################################
+
         create_cv_config_tab = QtWidgets.QWidget()
         create_cv_config_layout = QtWidgets.QGridLayout(create_cv_config_tab)
 
-        self.create_cv_button = QtWidgets.QPushButton("Create CV Config")
+        self.create_cv_button = QtWidgets.QPushButton("Cyclic Voltammetry")
         self.create_cv_button.clicked.connect(self.create_cv)
         create_cv_config_layout.addWidget(self.create_cv_button, 0, 0)
 

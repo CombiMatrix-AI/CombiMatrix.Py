@@ -22,12 +22,13 @@ class Gcode:
     name: str
     file: str
 
+
 class Experiment:
-    def __init__(self, solution, block, vcfg, gcode):
-        self.solution: str = solution
-        self.block: Block = block
-        self.vcfg: Vcfg = vcfg
-        self.gcode: Gcode = gcode
+    def __init__(self, solution, block=None, vcfg=None, gcode=None):
+        self.solution = solution
+        self.block = block
+        self.vcfg = vcfg
+        self.gcode = gcode
 
     def tile_block(self):
         new_start_row = self.block.start_row
@@ -42,9 +43,13 @@ class Experiment:
                 new_start_col -= self.block.num_cols
 
         self.block = Block(self.block.name, self.block.num_rows,
-                                      self.block.num_cols, new_start_row, new_start_col, self.block.definition)
+                           self.block.num_cols, new_start_row, new_start_col, self.block.definition)
 
     def __str__(self):
-        return (f'{self.solution[:24]:<25} Block: {self.block.name[:6]:<7} Mode: {self.vcfg.technique[:4]:<5} '
-                f'Vcfg: {self.vcfg.name[:6]:<7} Well: {self.gcode.name[:6]:<7}')
+        block_name = self.block.name if self.block else 'null'
+        vcfg_technique = self.vcfg.technique if self.vcfg else 'null'
+        vcfg_name = self.vcfg.name if self.vcfg else 'null'
+        gcode_name = self.gcode.name if self.gcode else 'null'
 
+        return (f'{self.solution[:24]:<25} Block: {block_name[:6]:<7} Mode: {vcfg_technique[:4]:<5} '
+                f'Vcfg: {vcfg_name[:6]:<7} Well: {gcode_name[:6]:<7}')

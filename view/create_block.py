@@ -2,7 +2,7 @@ import os
 from PyQt6 import QtWidgets, QtCore
 
 from definitions import ROOT_DIR
-from view.gridwidget import GridWidget
+from view.grid_widget import GridWidget
 
 
 class CreateBlockWindow(QtWidgets.QMainWindow):

@@ -6,8 +6,8 @@ from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
 from definitions import CONFIG, SET_ROBOT_ENABLED, SET_PAR_ENABLED
-from view.electrodesetup import ElectrodeSetupWindow
-from view.debugwindow import DebugWindow
+from view.electrode_setup import ElectrodeSetupWindow
+from view.debug_window import DebugWindow
 
 def change_theme(theme):
     CONFIG.set('General', 'theme', theme)
@@ -87,7 +87,7 @@ class LaunchWindow(QWidget):
 
         debug_window = DebugWindow()
         debug_window.show()
-        # sys.stdout = debug_window  # Redirect standard output to text widget
+        sys.stdout = debug_window  # Redirect standard output to text widget
 
         SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
         SET_PAR_ENABLED(self.par_checkbox.isChecked())
@@ -102,7 +102,6 @@ if __name__ == "__main__":
     extra = {
         # Font
         'font_family': 'Courier New',
-        'font_size': 14,
     }
 
     app = QApplication(sys.argv)
