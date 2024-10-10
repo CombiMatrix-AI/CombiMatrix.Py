@@ -1,7 +1,8 @@
+import platform
 import sys
 
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QComboBox, QHBoxLayout, \
-    QLineEdit, QGridLayout
+    QLineEdit, QGridLayout, QMessageBox
 from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
@@ -14,6 +15,11 @@ def change_theme(theme):
     with open('config.ini', 'w') as configfile:
         CONFIG.write(configfile)
     apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
+
+
+import json
+from db_utils import get_connection, is_valid_connection
+
 
 class LaunchWindow(QWidget):
     def __init__(self):
@@ -40,7 +46,7 @@ class LaunchWindow(QWidget):
         launch_button = QPushButton("Launch Program", self)
         launch_button.clicked.connect(self.launch_program)
         combi_button = QPushButton("Program Combi Chip Only", self)
-        #combi_button.clicked.connect(self.launch_program)
+        # combi_button.clicked.connect(self.launch_program)
 
         theme_label = QLabel("Theme:", self)
         theme_dropdown = QComboBox(self)
@@ -85,9 +91,29 @@ class LaunchWindow(QWidget):
         with open('config.ini', 'w') as configfile:
             CONFIG.write(configfile)
 
+        # Get database connection credentials
+        creds_path = CONFIG.get('Keys', 'path_to_db_creds')
+        try:
+            with open(creds_path, 'r') as file:
+                credentials = json.load(file)
+        except FileNotFoundError:
+            QMessageBox.warning(self, "File Not Found",
+                                "The database credentials file was not found. Please check the path and try again.")
+            return
+
+        # Check if the database connection is valid
+        con = get_connection(credentials)
+        if platform.system() != 'Darwin': # Don't check on Loren's computer
+            if not is_valid_connection(con):
+                QMessageBox.warning(self, "No Database Connection",
+                            "Invalid database connection. Please check your credentials.")
+                return
+
         debug_window = DebugWindow()
         debug_window.show()
         sys.stdout = debug_window  # Redirect standard output to text widget
+
+        print("Connected to database")
 
         SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
         SET_PAR_ENABLED(self.par_checkbox.isChecked())

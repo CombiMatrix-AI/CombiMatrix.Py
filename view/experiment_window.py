@@ -13,6 +13,7 @@ import fileio
 from definitions import ROOT_DIR, CONFIG, GET_ROBOT_ENABLED, GET_PAR_ENABLED, GET_COUNTER_ELECTRODE, \
     GET_REFERENCE_ELECTRODE, GET_WORKING_ELECTRODE
 from view.create_block import CreateBlockWindow
+from view.create_vcfg import CreateVcfgWindow
 
 if platform.system() != 'Darwin':
     from par import PAR
@@ -135,11 +136,18 @@ class ExperimentWindow(QMainWindow):
             self.blocks_dropdown.setEnabled(False)
             tile_block_button.setEnabled(False)
 
+        create_vcfg_button = QPushButton("Create VCFG", self)
         vcfgs_label = QLabel("Load VCFG Config:", self)
         self.vcfgs_dropdown = QComboBox(self)
         self.vcfgs = {}
         if self.enable_par:
-            self.par = init_par()
+            if platform.system() != 'Darwin':
+                self.par = init_par()
+
+            self.create_vcfg_window = CreateVcfgWindow()
+            self.create_vcfg_window.item_created.connect(self.item_created)
+
+            create_vcfg_button.clicked.connect(self.create_vcfg_window.show)
 
             self.vcfg_dir = os.path.join(ROOT_DIR, 'vcfgs')
             self.vcfgs = fileio.from_folder(self.vcfg_dir, '.vcfg')
@@ -210,6 +218,7 @@ class ExperimentWindow(QMainWindow):
 
         layout_top = QGridLayout()
         layout_top.addWidget(create_block_button, 0, 0)
+        layout_top.addWidget(create_vcfg_button, 0, 1)
         layout_top.addWidget(robot_controls_button, 0, 2)
         layout_top.addWidget(chip_test_button, 0, 3)
         layout_top.addWidget(run_cv_button, 0, 4)

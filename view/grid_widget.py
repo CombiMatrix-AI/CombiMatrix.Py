@@ -1,22 +1,23 @@
-from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import QLabel, QSizePolicy, QGridLayout, QWidget
 
-class GridWidget(QtWidgets.QWidget):
+
+class GridWidget(QWidget):
     def __init__(self, size, block_chipmap=None, rows=64, columns=16):
         super().__init__()
         self.block_chipmap = block_chipmap  # Bring the chipmap to this scope
         self.setStyleSheet("background-color: black;")  # Set background color to black
-        self.grid_layout = QtWidgets.QGridLayout(self)
+        self.grid_layout = QGridLayout(self)
         self.grid_layout.setSpacing(1)  # Set spacing between squares
         self.squares = []
 
         for row in range(rows):
             row_squares = []
             for col in range(columns):
-                square = QtWidgets.QLabel(self)
+                square = QLabel(self)
                 square.setFixedSize(size, size)  # Set a fixed size for the squares
                 square.setToolTip(f"{row}, {col}")
                 square.setStyleSheet("background-color: grey;")
-                square.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+                square.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
                 if block_chipmap is not None:
                     square.mousePressEvent = lambda event, r=row, c=col: self.on_square_click(r, c)
                 self.grid_layout.addWidget(square, row, col)

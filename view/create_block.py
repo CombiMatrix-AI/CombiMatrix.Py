@@ -1,35 +1,37 @@
 import os
-from PyQt6 import QtWidgets, QtCore
+from PyQt6 import QtCore
+from PyQt6.QtWidgets import QVBoxLayout, QMainWindow, QWidget, QHBoxLayout, QLineEdit, QPushButton, QSpacerItem, \
+    QSizePolicy
 
 from definitions import ROOT_DIR
 from view.grid_widget import GridWidget
 
 
-class CreateBlockWindow(QtWidgets.QMainWindow):
+class CreateBlockWindow(QMainWindow):
     item_created = QtCore.pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Create Block")
 
-        create_block_widget = QtWidgets.QWidget()
-        create_block_layout = QtWidgets.QHBoxLayout(create_block_widget)
+        create_block_widget = QWidget()
+        create_block_layout = QHBoxLayout(create_block_widget)
 
-        create_block_button_sublayout = QtWidgets.QVBoxLayout()
-        self.block_name_input = QtWidgets.QLineEdit(self)
+        create_block_button_sublayout = QVBoxLayout()
+        self.block_name_input = QLineEdit(self)
         self.block_name_input.setPlaceholderText("Enter Block Name")
         create_block_button_sublayout.addWidget(self.block_name_input, 0,
                                                 QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
-        self.create_block_button = QtWidgets.QPushButton("Create Block")
+        self.create_block_button = QPushButton("Create Block")
         self.create_block_button.clicked.connect(self.create_block)
         create_block_button_sublayout.addWidget(self.create_block_button, 0,
                                                 QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
-        self.clear_grid_button = QtWidgets.QPushButton("Clear Grid")
+        self.clear_grid_button = QPushButton("Clear Grid")
         self.clear_grid_button.clicked.connect(lambda: self.grid_widget.clear())
         create_block_button_sublayout.addWidget(self.clear_grid_button, 0,
                                                 QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
-        spacer = QtWidgets.QSpacerItem(200, 300, QtWidgets.QSizePolicy.Policy.Fixed,
-                                       QtWidgets.QSizePolicy.Policy.Minimum)
+        spacer = QSpacerItem(200, 300, QSizePolicy.Policy.Fixed,
+                                       QSizePolicy.Policy.Minimum)
         create_block_button_sublayout.addItem(spacer)
 
         create_block_layout.addLayout(create_block_button_sublayout, 0)
