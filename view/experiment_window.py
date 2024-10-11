@@ -21,6 +21,9 @@ if platform.system() != 'Darwin':
 from view.grid_widget import GridWidget
 from view.robot_window import RobotWindow
 
+import faulthandler
+faulthandler.enable()
+
 def grbl_callback(eventstring, *data):
     args = []
     for d in data:
@@ -122,11 +125,11 @@ class ExperimentWindow(QMainWindow):
             self.create_block_window.item_created.connect(self.item_created)
 
             create_block_button.clicked.connect(self.create_block_window.show)
-            chip_test_button.clicked.connect(lambda: self.chip_test(1))
+            chip_test_button.clicked.connect(self.chip_test)
 
             self.blocks_dropdown.addItems(list(self.blocks.keys()))
 
-            tile_block_button.clicked.connect(lambda: self.tile_block())
+            tile_block_button.clicked.connect(self.tile_block)
 
             self.grid_widget = GridWidget(5)
         else:
@@ -208,7 +211,7 @@ class ExperimentWindow(QMainWindow):
         if self.enable_adlink:
             self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
-        self.experiments_tab = QListWidget()
+        self.experiments_tab = QListWidget(self)
         self.experiments_tab.currentItemChanged.connect(self.exp_index_changed)
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
         self.experiments_tab.setFixedSize(700, 500)
@@ -299,7 +302,9 @@ class ExperimentWindow(QMainWindow):
             new_index = self.vcfgs_dropdown.findText(text.split(',')[1].strip())
             self.vcfgs_dropdown.setCurrentIndex(new_index)
 
-    def chip_test(self, channel):
+    def chip_test(self):
+        channel = 1
+
         for i in range(7):
             match i:
                 case 0:

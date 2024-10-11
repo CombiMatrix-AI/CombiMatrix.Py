@@ -109,17 +109,17 @@ class LaunchWindow(QWidget):
                             "Invalid database connection. Please check your credentials.")
                 return
 
-        debug_window = DebugWindow()
-        debug_window.show()
-        sys.stdout = debug_window  # Redirect standard output to text widget
+        self.debug_window = DebugWindow()
+        self.debug_window.show()
+        #sys.stdout = self.debug_window  # Redirect standard output to text widget
 
         print("Connected to database")
 
         SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
         SET_PAR_ENABLED(self.par_checkbox.isChecked())
 
-        electrode_setup = ElectrodeSetupWindow()
-        electrode_setup.show()
+        self.electrode_setup = ElectrodeSetupWindow()
+        self.electrode_setup.show()
 
         self.close()  # Close the launch window
 

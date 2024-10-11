@@ -119,22 +119,22 @@ class ElectrodeSetupWindow(QMainWindow):
         main_layout.addWidget(title, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
 
         h1_layout = QHBoxLayout()
-        self.counter_dropdown = QComboBox()
+        self.counter_dropdown = QComboBox(self)
         self.counter_dropdown.setFixedWidth(300)
-        h1_layout.addWidget(QLabel("Counter:"))
+        h1_layout.addWidget(QLabel("Counter:", self))
         h1_layout.addWidget(self.counter_dropdown)
 
         h2_layout = QHBoxLayout()
-        self.reference_dropdown = QComboBox()
+        self.reference_dropdown = QComboBox(self)
         self.reference_dropdown.setFixedWidth(300)
-        h2_layout.addWidget(QLabel("Reference:"))
+        h2_layout.addWidget(QLabel("Reference:", self))
         h2_layout.addWidget(self.reference_dropdown)
 
 
         h3_layout = QHBoxLayout()
-        self.working_dropdown = QComboBox()
+        self.working_dropdown = QComboBox(self)
         self.working_dropdown.setFixedWidth(300)
-        h3_layout.addWidget(QLabel("Working:"))
+        h3_layout.addWidget(QLabel("Working:", self))
         h3_layout.addWidget(self.working_dropdown)
 
         main_layout.addLayout(h1_layout)
@@ -142,8 +142,8 @@ class ElectrodeSetupWindow(QMainWindow):
         main_layout.addLayout(h3_layout)
 
         # Add OK button to start ExperimentWindow
-        self.ok_button = QPushButton("OK")
-        self.ok_button.clicked.connect(lambda: self.start_experiment())
+        self.ok_button = QPushButton("OK", self)
+        self.ok_button.clicked.connect(self.start_experiment)
         main_layout.addWidget(self.ok_button, 0, QtCore.Qt.AlignmentFlag.AlignHCenter)
 
         container = QWidget()
@@ -221,6 +221,6 @@ class ElectrodeSetupWindow(QMainWindow):
             SET_WORKING_ELECTRODE(working_text)
             SET_REFERENCE_ELECTRODE(reference_text)
 
-            experiment_window = ExperimentWindow()
-            experiment_window.show()
+            self.experiment_window = ExperimentWindow()
+            self.experiment_window.show()
             self.close()
