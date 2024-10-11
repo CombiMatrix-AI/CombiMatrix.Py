@@ -245,10 +245,6 @@ class ExperimentWindow(QMainWindow):
         layout_middle_grid.addWidget(save_experiment_button, 4, 0)
         layout_middle_grid.addWidget(update_experiment_button, 4, 1)
         layout_middle_grid.addWidget(delete_experiment_button, 4, 2)
-        spacer = QSpacerItem(125, 125, QSizePolicy.Policy.Fixed,
-                             QSizePolicy.Policy.Minimum)
-        layout_middle_grid.addItem(spacer, 5, 0)
-        layout_middle_grid.addItem(spacer, 5, 1)
         layout_middle.addLayout(layout_middle_grid)
         layout_middle.addWidget(self.experiments_tab)
         if self.enable_adlink:
