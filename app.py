@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
 from definitions import CONFIG, SET_ROBOT_ENABLED, SET_PAR_ENABLED
+from view.combi_control import CombiControlWindow
 from view.electrode_setup import ElectrodeSetupWindow
 from view.debug_window import DebugWindow
 
@@ -46,7 +47,7 @@ class LaunchWindow(QWidget):
         launch_button = QPushButton("Launch Program", self)
         launch_button.clicked.connect(self.launch_program)
         combi_button = QPushButton("Program Combi Chip Only", self)
-        # combi_button.clicked.connect(self.launch_program)
+        combi_button.clicked.connect(self.launch_combi)
 
         theme_label = QLabel("Theme:", self)
         theme_dropdown = QComboBox(self)
@@ -111,7 +112,7 @@ class LaunchWindow(QWidget):
 
         self.debug_window = DebugWindow()
         self.debug_window.show()
-        #sys.stdout = self.debug_window  # Redirect standard output to text widget
+        sys.stdout = self.debug_window  # Redirect standard output to text widget
 
         print("Connected to database")
 
@@ -120,6 +121,16 @@ class LaunchWindow(QWidget):
 
         self.electrode_setup = ElectrodeSetupWindow()
         self.electrode_setup.show()
+
+        self.close()  # Close the launch window
+
+    def launch_combi(self):
+        self.debug_window = DebugWindow()
+        self.debug_window.show()
+        sys.stdout = self.debug_window  # Redirect standard output to text widget
+
+        self.combi_window = CombiControlWindow()
+        self.combi_window.show()
 
         self.close()  # Close the launch window
 

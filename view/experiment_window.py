@@ -195,6 +195,10 @@ class ExperimentWindow(QMainWindow):
         self.solution_input = QLineEdit(self)
         self.solution_input.setReadOnly(True)
 
+        stage_label = QLabel("Experiment Stage:", self)
+        self.stage_dropdown = QComboBox(self)
+        self.stage_dropdown.addItems(["Assay", "Clean", "Deposition"])
+
         save_experiment_button = QPushButton("New Experiment", self)
         save_experiment_button.clicked.connect(self.save_experiment)
         update_experiment_button = QPushButton("Update Experiment", self)
@@ -204,6 +208,7 @@ class ExperimentWindow(QMainWindow):
 
         self.curr_exp_index = 0
         self.experiments_list = [experiment.Experiment("null",
+                                                       "null",
                                                        self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
                                                        self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
                                                        self.gcode[self.gcode_dropdown.currentText()] if self.gcode else None,
@@ -242,9 +247,11 @@ class ExperimentWindow(QMainWindow):
         layout_middle_grid.addWidget(gcode_label, 3, 0)
         layout_middle_grid.addWidget(self.gcode_dropdown, 3, 1)
         layout_middle_grid.addWidget(execute_gcode_button, 3, 2)
-        layout_middle_grid.addWidget(save_experiment_button, 4, 0)
-        layout_middle_grid.addWidget(update_experiment_button, 4, 1)
-        layout_middle_grid.addWidget(delete_experiment_button, 4, 2)
+        layout_middle_grid.addWidget(stage_label, 4, 0)
+        layout_middle_grid.addWidget(self.stage_dropdown, 4, 1)
+        layout_middle_grid.addWidget(save_experiment_button, 5, 0)
+        layout_middle_grid.addWidget(update_experiment_button, 5, 1)
+        layout_middle_grid.addWidget(delete_experiment_button, 5, 2)
         layout_middle.addLayout(layout_middle_grid)
         layout_middle.addWidget(self.experiments_tab)
         if self.enable_adlink:
@@ -383,7 +390,7 @@ class ExperimentWindow(QMainWindow):
     def save_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list.append(
-            experiment.Experiment(self.solution_input.text(), self.blocks[
+            experiment.Experiment(self.solution_input.text(), self.stage_dropdown.currentText(), self.blocks[
                                                            self.blocks_dropdown.currentText()] if self.blocks else None,
                                                        self.vcfgs[
                                                            self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
@@ -395,7 +402,7 @@ class ExperimentWindow(QMainWindow):
     def update_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         curr_block = self.experiments_list[self.curr_exp_index].block
-        self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(),
+        self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(), self.stage_dropdown.currentText(),
                                                        self.blocks[
                                                            self.blocks_dropdown.currentText()] if self.blocks else None,
                                                        self.vcfgs[

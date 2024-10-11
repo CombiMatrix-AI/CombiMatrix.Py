@@ -24,8 +24,9 @@ class Gcode:
 
 
 class Experiment:
-    def __init__(self, solution, block=None, vcfg=None, gcode=None):
+    def __init__(self, solution, stage, block=None, vcfg=None, gcode=None):
         self.solution = solution
+        self.stage = stage
         self.block = block
         self.vcfg = vcfg
         self.gcode = gcode
@@ -46,10 +47,12 @@ class Experiment:
                            self.block.num_cols, new_start_row, new_start_col, self.block.definition)
 
     def __str__(self):
-        block_name = self.block.name if self.block else 'null'
-        vcfg_technique = self.vcfg.technique if self.vcfg else 'null'
-        vcfg_name = self.vcfg.name if self.vcfg else 'null'
-        gcode_name = self.gcode.name if self.gcode else 'null'
-
-        return (f'{self.solution[:24]:<25} Block: {block_name[:6]:<7} Mode: {vcfg_technique[:4]:<5} '
-                f'Vcfg: {vcfg_name[:6]:<7} Well: {gcode_name[:6]:<7}')
+        parts = [
+            f'Soln: {self.solution[:15]:15}',
+            f'Stage: {self.stage[:10]:10}',
+            f'Block: {self.block.name[:10]:10}' if self.block else '',
+            f'Mode: {self.vcfg.technique[:5]:5}' if self.vcfg else '',
+            f'Vcfg: {self.vcfg.name[:10]:10}' if self.vcfg else '',
+            f'Well: {self.gcode.name[:5]:5}' if self.gcode else ''
+        ]
+        return ' '.join(part for part in parts if part)

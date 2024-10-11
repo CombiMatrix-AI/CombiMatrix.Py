@@ -1,0 +1,8 @@
+technique = "CA"
+v_step = [0.6, 1.9, 0.0, 0.6, 0.6]
+vs_init = [False, False, False, False, False]
+duration_step = [800.0, 800.0, 800.0, 800.0, 800.0]
+step_number = 2
+record_de = 0.01
+record_di = True
+n_cycles = 25
