@@ -4,6 +4,8 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from dataclasses import asdict
+
 from kbio.kbio_api import KBIO_api
 from kbio.kbio_tech import ECC_parm
 from kbio.kbio_tech import get_experiment_data
@@ -36,6 +38,25 @@ class KBio:
         if not channel_info.is_kernel_loaded:
             print("> kernel must be loaded in order to run the experiment")
             sys.exit(-1)
+
+    def set_parameters(self, vcfg):
+        # Convert to dictionary and iterate through key-value pairs
+        parameter_steps = list()
+        for key, value in asdict(vcfg.configs).items():
+            if isinstance(value, list):
+                for i in range(len(value)):
+                    parameter = make_ecc_parm(self.api, ECC_parm(key, type(value[i])), value[i], i)
+                    parameter_steps.append(parameter)
+                    print(f"{key}, {i}: {value[i]}")
+            else:
+                parameter = make_ecc_parm(self.api, ECC_parm(key, type(value)), value)
+                parameter_steps.append(parameter)
+                print(f"{key}: {value}")
+
+        ecc_parms = make_ecc_parms(self.api, *parameter_steps)
+        return ecc_parms
+
+        
 
     def cyclic_voltammetry(self, cv, index): #TODO: GENERALIZE
         vs_init = [False, False, False, False, False] # TODO: fix CV data object = cv.vs_init
