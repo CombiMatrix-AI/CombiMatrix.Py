@@ -1,6 +1,6 @@
 import platform
 import sys
-
+from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QComboBox, QHBoxLayout, \
     QLineEdit, QGridLayout, QMessageBox
 from PyQt6.QtCore import Qt
@@ -13,7 +13,7 @@ from view.debug_window import DebugWindow
 
 def change_theme(theme):
     CONFIG.set('General', 'theme', theme)
-    with open('config.ini', 'w') as configfile:
+    with open(Path(__file__).parent /'config.ini', 'w') as configfile:
         CONFIG.write(configfile)
     apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
 
@@ -89,7 +89,7 @@ class LaunchWindow(QWidget):
     def launch_program(self):
         CONFIG.set('General', 'user', self.user_input.text())
         CONFIG.set('General', 'customer', self.customer_input.text())
-        with open('config.ini', 'w') as configfile:
+        with open(Path(__file__).parent / 'config.ini', 'w') as configfile:
             CONFIG.write(configfile)
 
         # Get database connection credentials
