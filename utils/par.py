@@ -12,9 +12,10 @@ from kbio.kbio_tech import get_experiment_data
 from kbio.kbio_tech import get_info_data
 from kbio.kbio_tech import make_ecc_parm
 from kbio.kbio_tech import make_ecc_parms
+from utils.ui_utils import ROOT_DIR
 
 
-class KBio:
+class PAR:
     def __init__(self, address):
         self.api = KBIO_api(os.path.join(os.path.dirname(__file__), "lib", "EClib64.dll"))  # Init self.api
         self.channel = 4 # TODO: GENERALIZE LATER
@@ -106,7 +107,9 @@ class KBio:
 
         # experiment loop
         filename = "cv" + str(index)
-        csvfile = open(f"{filename}.csv", "w")
+        output_path = ROOT_DIR / "outputs" / f"{filename}.csv"
+
+        csvfile = open(output_path, "w")
         csvfile.write("t (s),Ece (V),Iwe (A),Ewe (V),cycle\n")
         count = 0
         print("Reading data")

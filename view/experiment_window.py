@@ -1,6 +1,7 @@
 import platform
 import os
 import random
+
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLayout, QWidget, QDialog, QMainWindow, \
     QApplication, QComboBox, QListWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QDialogButtonBox, \
@@ -8,16 +9,15 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLa
 from grbl_streamer import GrblStreamer
 import time
 
-import experiment
-import fileio
-from definitions import ROOT_DIR, CONFIG, GET_ROBOT_ENABLED, GET_PAR_ENABLED, GET_COUNTER_ELECTRODE, \
-    GET_REFERENCE_ELECTRODE, GET_WORKING_ELECTRODE
+from utils import experiment, fileio
+from utils.ui_utils import ROOT_DIR, get_robot_enabled, get_par_enabled, get_counter_electrode, \
+    get_reference_electrode, get_working_electrode, config_init
 from view.create_block import CreateBlockWindow
 from view.create_vcfg import CreateVcfgWindow
 
 if platform.system() != 'Darwin':
-    from par import PAR
-    from adlink import Adlink
+    from utils.par import PAR
+    from utils.adlink import Adlink
 from view.grid_widget import GridWidget
 from view.robot_window import RobotWindow
 
@@ -36,7 +36,8 @@ def init_adlink():
     return adlink_card
 
 def init_par():
-    kbio_port = CONFIG.get('Ports', 'par_port')
+    config = config_init()
+    kbio_port = config.get('Ports', 'par_port')
     par = PAR(kbio_port)
     print("DEBUG MESSAGE: EC-Lab PAR Initialized")
     return par
@@ -44,7 +45,8 @@ def init_par():
 def init_robot():
     grbl = GrblStreamer(grbl_callback)
     grbl.setup_logging()
-    grbl_port = CONFIG.get('Ports', 'robot_port')
+    config = config_init()
+    grbl_port = config.get('Ports', 'robot_port')
     grbl.cnect(grbl_port, 115200)
     print("DEBUG MESSAGE: GRBL Connected")
     time.sleep(1)  # Let grbl connect
@@ -93,10 +95,12 @@ class ExperimentWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
 
-        self.enable_robot = GET_ROBOT_ENABLED()
-        self.enable_par = GET_PAR_ENABLED()
+        self.config = config_init()
+
+        self.enable_robot = get_robot_enabled()
+        self.enable_par = get_par_enabled()
         self.enable_adlink = any(electrode.startswith("Chip: CBMX") for electrode in
-                            [GET_COUNTER_ELECTRODE(), GET_WORKING_ELECTRODE(), GET_REFERENCE_ELECTRODE()])
+                            [get_counter_electrode(), get_working_electrode(), get_reference_electrode()])
 
         if not (self.enable_robot or self.enable_par or self.enable_adlink):
             msg_box = QMessageBox(self)
@@ -206,7 +210,7 @@ class ExperimentWindow(QMainWindow):
         delete_experiment_button = QPushButton("Delete Experiment", self)
         delete_experiment_button.clicked.connect(self.delete_experiment)
 
-        self.curr_exp_index = 0
+        self.curr_exp_index = -1
         self.experiments_list = [experiment.Experiment("null",
                                                        "null",
                                                        self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
@@ -261,9 +265,9 @@ class ExperimentWindow(QMainWindow):
 
         layout_master.addWidget(
             QLabel(
-                f"User: {CONFIG.get('General', 'user')}   Customer: {CONFIG.get('General', 'customer')}   "
-                f"Robot On: {self.enable_robot}   PAR On: {self.enable_par}   Counter: {GET_COUNTER_ELECTRODE()}   "
-                f"Reference: {GET_REFERENCE_ELECTRODE()}   Working: {GET_WORKING_ELECTRODE()}"
+                f"User: {self.config.get('General', 'user')}   Customer: {self.config.get('General', 'customer')}   "
+                f"Robot On: {self.enable_robot}   PAR On: {self.enable_par}   Counter: {get_counter_electrode()}   "
+                f"Reference: {get_reference_electrode()}   Working: {get_working_electrode()}"
                 , self))
 
         container = QWidget()
@@ -392,24 +396,24 @@ class ExperimentWindow(QMainWindow):
         self.experiments_list.append(
             experiment.Experiment(self.solution_input.text(), self.stage_dropdown.currentText(), self.blocks[
                                                            self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                       self.vcfgs[
+                                  self.vcfgs[
                                                            self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                       self.gcode[
+                                  self.gcode[
                                                            self.gcode_dropdown.currentText()] if self.gcode else None,
-                                                       ))
+                                  ))
         self.experiments_tab.addItem(str(self.experiments_list[-1]))
 
     def update_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         curr_block = self.experiments_list[self.curr_exp_index].block
         self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(), self.stage_dropdown.currentText(),
-                                                       self.blocks[
+                                                                           self.blocks[
                                                            self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                       self.vcfgs[
+                                                                           self.vcfgs[
                                                            self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                       self.gcode[
+                                                                           self.gcode[
                                                            self.gcode_dropdown.currentText()] if self.gcode else None,
-                                                       )
+                                                                           )
         if curr_block is not None:
             if curr_block.name != self.experiments_list[self.curr_exp_index].block.name:
                 self.load_block(self.experiments_list[self.curr_exp_index].block)
@@ -425,3 +429,4 @@ class ExperimentWindow(QMainWindow):
         del self.experiments_list[self.curr_exp_index]
         self.experiments_tab.clear()
         self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
+        self.curr_exp_index = -1

@@ -2,7 +2,7 @@ import os
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QGridLayout, QPushButton, QLineEdit, QLabel, QCheckBox
 from PyQt6.QtCore import pyqtSignal
 
-from definitions import ROOT_DIR
+from utils.ui_utils import ROOT_DIR
 
 
 class CreateVcfgWindow(QMainWindow):

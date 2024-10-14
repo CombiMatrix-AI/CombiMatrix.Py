@@ -2,7 +2,7 @@ import os
 import platform
 from ctypes import *
 
-from definitions import ROOT_DIR
+from ui_utils import ROOT_DIR
 
 
 class Dask91xxLib:

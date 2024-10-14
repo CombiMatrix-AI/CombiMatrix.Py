@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QPushButton, QMainWindow, QVBoxLayout, QHBoxLayout, 
 from PyQt6 import QtCore
 import pandas as pd
 
-from definitions import ROOT_DIR, SET_COUNTER_ELECTRODE, SET_WORKING_ELECTRODE, SET_REFERENCE_ELECTRODE
+from utils.ui_utils import ROOT_DIR, set_counter_electrode, set_working_electrode, set_reference_electrode
 from view.experiment_window import ExperimentWindow
 
 # Load the Excel sheet
@@ -217,9 +217,9 @@ class ElectrodeSetupWindow(QMainWindow):
                         "CBMX chip can only be used on one electrode per experiment.")
             return
         else:
-            SET_COUNTER_ELECTRODE(counter_text)
-            SET_WORKING_ELECTRODE(working_text)
-            SET_REFERENCE_ELECTRODE(reference_text)
+            set_counter_electrode(counter_text)
+            set_working_electrode(working_text)
+            set_reference_electrode(reference_text)
 
             self.experiment_window = ExperimentWindow()
             self.experiment_window.show()

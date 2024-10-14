@@ -3,7 +3,7 @@ from PyQt6 import QtCore
 from PyQt6.QtWidgets import QVBoxLayout, QMainWindow, QWidget, QHBoxLayout, QLineEdit, QPushButton, QSpacerItem, \
     QSizePolicy
 
-from definitions import ROOT_DIR
+from utils.ui_utils import ROOT_DIR
 from view.grid_widget import GridWidget
 
 

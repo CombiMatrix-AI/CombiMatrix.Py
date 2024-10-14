@@ -2,15 +2,16 @@ import os
 import platform
 import random
 
-from PyQt6.QtWidgets import QMainWindow, QPushButton, QComboBox, QLabel, QWidget, QGridLayout, QApplication
+from PyQt6.QtWidgets import QMainWindow, QPushButton, QComboBox, QWidget, QGridLayout, QApplication
 
-import fileio
+from utils import fileio
+
 if platform.system() != 'Darwin':
-    from adlink import Adlink
-from definitions import ROOT_DIR
+    from utils.adlink import Adlink
+from utils.ui_utils import ROOT_DIR
 from view.create_block import CreateBlockWindow
 from view.grid_widget import GridWidget
-from experiment import Block
+from utils.experiment import Block
 
 
 class CombiControlWindow(QMainWindow):
@@ -31,8 +32,8 @@ class CombiControlWindow(QMainWindow):
         self.blocks_dropdown = QComboBox(self)
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
 
-        create_block_button = QPushButton("Create Block", self)
-        create_block_button.clicked.connect(self.create_block_window.show)
+        self.create_block_button = QPushButton("Create Block", self)
+        self.create_block_button.clicked.connect(self.create_block_window.show)
         
         chip_test_button = QPushButton("Run Chip Test", self)
         chip_test_button.clicked.connect(self.chip_test)
@@ -60,7 +61,7 @@ class CombiControlWindow(QMainWindow):
         layout_master.addWidget(load_block_button, 0, 0)
         layout_master.addWidget(self.blocks_dropdown, 0, 1)
         layout_master.addWidget(tile_block_button, 1, 0)
-        layout_master.addWidget(create_block_button, 2, 0)
+        layout_master.addWidget(self.create_block_button, 2, 0)
         layout_master.addWidget(exit_button, 3, 0)
         layout_master.addWidget(self.grid_widget, 0, 2, 4, 1)  # Place the grid widget next to the other widgets
 

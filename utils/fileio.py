@@ -1,7 +1,8 @@
 import ast
 import os
-import experiment
-import technique_fields
+
+import utils.experiment as experiment
+from kbio import technique_fields
 
 
 def from_file(file_path, file_type = None):

@@ -6,20 +6,19 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBo
 from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
-from definitions import CONFIG, SET_ROBOT_ENABLED, SET_PAR_ENABLED
+from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init
 from view.combi_control import CombiControlWindow
 from view.electrode_setup import ElectrodeSetupWindow
 from view.debug_window import DebugWindow
 
-def change_theme(theme):
-    CONFIG.set('General', 'theme', theme)
-    with open(Path(__file__).parent /'config.ini', 'w') as configfile:
-        CONFIG.write(configfile)
-    apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
-
-
 import json
-from db_utils import get_connection, is_valid_connection
+from database.db_utils import get_connection, is_valid_connection
+
+def change_theme(theme):
+    config.set('General', 'theme', theme)
+    with open(Path(__file__).parent / 'config.ini', 'w') as configfile:
+        config.write(configfile)
+    apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
 
 
 class LaunchWindow(QWidget):
@@ -34,10 +33,12 @@ class LaunchWindow(QWidget):
         title = QLabel("Yonder Lab Control", self)
         title.setProperty('class', 'title')
 
+        config = config_init()
+
         self.user_input = QLineEdit(self)
-        self.user_input.setText(CONFIG.get('General', 'user'))
+        self.user_input.setText(config.get('General', 'user'))
         self.customer_input = QLineEdit(self)
-        self.customer_input.setText(CONFIG.get('General', 'customer'))
+        self.customer_input.setText(config.get('General', 'customer'))
 
         # Create checkboxes
         self.robot_checkbox = QCheckBox("Enable Robot Control", self)
@@ -46,8 +47,8 @@ class LaunchWindow(QWidget):
         # Create a button for launching the program
         launch_button = QPushButton("Launch Program", self)
         launch_button.clicked.connect(self.launch_program)
-        combi_button = QPushButton("Program Combi Chip Only", self)
-        combi_button.clicked.connect(self.launch_combi)
+        self.combi_button = QPushButton("Program Combi Chip Only", self)
+        self.combi_button.clicked.connect(self.launch_combi)
 
         theme_label = QLabel("Theme:", self)
         theme_dropdown = QComboBox(self)
@@ -56,6 +57,7 @@ class LaunchWindow(QWidget):
              'dark_purple.xml', 'dark_red.xml', 'dark_teal.xml', 'dark_yellow.xml', 'light_amber.xml', 'light_blue.xml',
              'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
              'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
+        theme = config.get('General', 'theme')
         theme_dropdown.setCurrentText(theme)
         theme_dropdown.activated.connect(lambda: change_theme(theme_dropdown.currentText()))
 
@@ -75,7 +77,7 @@ class LaunchWindow(QWidget):
 
         layout_buttons = QHBoxLayout()
         layout_buttons.addWidget(launch_button)
-        layout_buttons.addWidget(combi_button)
+        layout_buttons.addWidget(self.combi_button)
         layout.addLayout(layout_buttons)
 
         layout_bottom = QHBoxLayout()
@@ -87,19 +89,20 @@ class LaunchWindow(QWidget):
         self.setLayout(layout)
 
     def launch_program(self):
-        CONFIG.set('General', 'user', self.user_input.text())
-        CONFIG.set('General', 'customer', self.customer_input.text())
+        config = config_init()
+        config.set('General', 'user', self.user_input.text())
+        config.set('General', 'customer', self.customer_input.text())
         with open(Path(__file__).parent / 'config.ini', 'w') as configfile:
-            CONFIG.write(configfile)
+            config.write(configfile)
 
         # Get database connection credentials
-        creds_path = CONFIG.get('Keys', 'path_to_db_creds')
         try:
-            with open(creds_path, 'r') as file:
+            with open(Path(__file__).parent / 'credentials.json', 'r') as file:
                 credentials = json.load(file)
         except FileNotFoundError:
             QMessageBox.warning(self, "File Not Found",
-                                "The database credentials file was not found. Please check the path and try again.")
+                                "The database credentials file was not found. "
+                                "Please add credentials.json to application directory and restart.")
             return
 
         # Check if the database connection is valid
@@ -116,8 +119,8 @@ class LaunchWindow(QWidget):
 
         print("Connected to database")
 
-        SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
-        SET_PAR_ENABLED(self.par_checkbox.isChecked())
+        set_robot_enabled(self.robot_checkbox.isChecked())
+        set_par_enabled(self.par_checkbox.isChecked())
 
         self.electrode_setup = ElectrodeSetupWindow()
         self.electrode_setup.show()
@@ -141,8 +144,12 @@ if __name__ == "__main__":
         'font_family': 'Courier New',
     }
 
+
     app = QApplication(sys.argv)
-    theme = CONFIG.get('General', 'theme')
+
+    config = config_init()
+
+    theme = config.get('General', 'theme')
     apply_stylesheet(app, theme=theme, extra=extra, css_file='view/stylesheet.css')
 
     window = LaunchWindow()

@@ -4,7 +4,7 @@
 
 import time
 
-import dask91xx
+from utils import dask91xx
 
 
 def wait(duration, get_now=time.perf_counter): # Allows for more precise nanosecond wait times
