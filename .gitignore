@@ -1,3 +1,5 @@
+credentials.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.pyc
@@ -42,3 +44,4 @@ env.bak/
 # IDE-specific files
 .idea/
 .vscode/
+.DS_Store

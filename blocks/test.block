@@ -1,6 +1,0 @@
-[Block Config]
-Number rows = 2
-Number columns = 3
-Start row = 62
-Start column = 0
-Definition = [[2, 2, 2], [2, 2, 2]]
