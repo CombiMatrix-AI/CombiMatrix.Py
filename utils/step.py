@@ -23,7 +23,7 @@ class Gcode:
     file: str
 
 
-class Experiment:
+class Step:
     def __init__(self, solution, stage, block=None, vcfg=None, gcode=None):
         self.solution = solution
         self.stage = stage

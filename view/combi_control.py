@@ -1,4 +1,3 @@
-import os
 import platform
 import random
 
@@ -11,7 +10,7 @@ if platform.system() != 'Darwin':
 from utils.ui_utils import ROOT_DIR
 from view.create_block import CreateBlockWindow
 from view.grid_widget import GridWidget
-from utils.experiment import Block
+from utils.step import Block
 
 
 class CombiControlWindow(QMainWindow):
@@ -23,7 +22,7 @@ class CombiControlWindow(QMainWindow):
             self.adlink_card = Adlink()
         print("DEBUG MESSAGE: Adlink Card Initialized")
 
-        self.blocks_dir = os.path.join(ROOT_DIR, 'blocks')
+        self.blocks_dir = ROOT_DIR / 'blocks'
         self.blocks = fileio.from_folder(self.blocks_dir, '.block')
 
         self.create_block_window = CreateBlockWindow()

@@ -5,7 +5,7 @@ ROOT_DIR = Path(__file__).parent / '..'
 
 def config_init():
     # Correct path to the configuration file
-    config_path = Path(__file__).parent / '..' / 'config.ini'
+    config_path = ROOT_DIR / 'config.ini'
 
     # Read the configuration file
     config = ConfigParser()

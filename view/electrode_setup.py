@@ -1,4 +1,3 @@
-import os
 from PyQt6.QtWidgets import QPushButton, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QComboBox, QLabel, \
     QDialog, QLineEdit, QFormLayout, QDialogButtonBox, QMessageBox
 from PyQt6 import QtCore
@@ -8,7 +7,7 @@ from utils.ui_utils import ROOT_DIR, set_counter_electrode, set_working_electrod
 from view.experiment_window import ExperimentWindow
 
 # Load the Excel sheet
-electrodes_df = pd.read_excel(os.path.join(ROOT_DIR, "database", "Electrodes.xlsx"))
+electrodes_df = pd.read_excel(ROOT_DIR / "database" / "Electrodes.xlsx")
 # Filter out rows with any missing values in 'Name' or 'Generally used as:' columns
 electrodes_df.dropna(subset=['Name', 'Generally used as:'], inplace=True)
 electrodes_db = electrodes_df[['Name', 'Generally used as:']].to_dict(orient='records')

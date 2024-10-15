@@ -1,4 +1,3 @@
-import os
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QVBoxLayout, QMainWindow, QWidget, QHBoxLayout, QLineEdit, QPushButton, QSpacerItem, \
     QSizePolicy
@@ -77,10 +76,10 @@ class CreateBlockWindow(QMainWindow):
         )
 
         # Ensure the blocks directory exists
-        blocks_dir = os.path.join(ROOT_DIR, 'blocks')
+        blocks_dir = ROOT_DIR / 'blocks'
 
         # Write the content to a .block file in the blocks folder
-        with open(os.path.join(blocks_dir, f"{block_name}.block"), "w") as block_file:
+        with open(blocks_dir / f"{block_name}.block", "w") as block_file:
             block_file.write(block_file_content)
 
         self.grid_widget.clear()

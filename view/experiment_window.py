@@ -1,5 +1,4 @@
 import platform
-import os
 import random
 
 from PyQt6 import QtCore
@@ -9,7 +8,8 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLa
 from grbl_streamer import GrblStreamer
 import time
 
-from utils import experiment, fileio
+from utils.step import Step
+from utils import fileio
 from utils.ui_utils import ROOT_DIR, get_robot_enabled, get_par_enabled, get_counter_electrode, \
     get_reference_electrode, get_working_electrode, config_init
 from view.create_block import CreateBlockWindow
@@ -122,7 +122,7 @@ class ExperimentWindow(QMainWindow):
             if platform.system() != 'Darwin':
                 self.adlink_card = init_adlink()
 
-            self.blocks_dir = os.path.join(ROOT_DIR, 'blocks')
+            self.blocks_dir = ROOT_DIR / 'blocks'
             self.blocks = fileio.from_folder(self.blocks_dir, '.block')
 
             self.create_block_window = CreateBlockWindow()
@@ -156,7 +156,7 @@ class ExperimentWindow(QMainWindow):
 
             create_vcfg_button.clicked.connect(self.create_vcfg_window.show)
 
-            self.vcfg_dir = os.path.join(ROOT_DIR, 'vcfgs')
+            self.vcfg_dir = ROOT_DIR / 'vcfgs'
             self.vcfgs = fileio.from_folder(self.vcfg_dir, '.vcfg')
 
             self.vcfgs_dropdown.addItems(list(self.vcfgs.keys()))
@@ -172,7 +172,7 @@ class ExperimentWindow(QMainWindow):
         if self.enable_robot:
             self.grbl = init_robot()
 
-            self.gcode_dir = os.path.join(ROOT_DIR, 'gcode')
+            self.gcode_dir = ROOT_DIR / 'gcode'
             self.gcode = fileio.from_folder(self.gcode_dir, '.gcode')
 
             self.robot_window = RobotWindow(self.grbl)
@@ -211,12 +211,12 @@ class ExperimentWindow(QMainWindow):
         delete_experiment_button.clicked.connect(self.delete_experiment)
 
         self.curr_exp_index = -1
-        self.experiments_list = [experiment.Experiment("null",
+        self.experiments_list = [Step("null",
                                                        "null",
-                                                       self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                       self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                       self.gcode[self.gcode_dropdown.currentText()] if self.gcode else None,
-                                                       )]
+                                                 self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
+                                                 self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                                                 self.gcode[self.gcode_dropdown.currentText()] if self.gcode else None,
+                                                 )]
         if self.enable_adlink:
             self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
@@ -353,7 +353,7 @@ class ExperimentWindow(QMainWindow):
                 print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
 
     def execute_gcode(self, gcode):
-        gcode_file = os.path.join(self.gcode_dir, gcode.file)
+        gcode_file = self.gcode_dir / gcode.file
         self.grbl.load_file(gcode_file)
         self.grbl.job_run()
 
@@ -394,26 +394,26 @@ class ExperimentWindow(QMainWindow):
     def save_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.experiments_list.append(
-            experiment.Experiment(self.solution_input.text(), self.stage_dropdown.currentText(), self.blocks[
+            Step(self.solution_input.text(), self.stage_dropdown.currentText(), self.blocks[
                                                            self.blocks_dropdown.currentText()] if self.blocks else None,
-                                  self.vcfgs[
+                            self.vcfgs[
                                                            self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                  self.gcode[
+                            self.gcode[
                                                            self.gcode_dropdown.currentText()] if self.gcode else None,
-                                  ))
+                            ))
         self.experiments_tab.addItem(str(self.experiments_list[-1]))
 
     def update_experiment(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         curr_block = self.experiments_list[self.curr_exp_index].block
-        self.experiments_list[self.curr_exp_index] = experiment.Experiment(self.solution_input.text(), self.stage_dropdown.currentText(),
-                                                                           self.blocks[
+        self.experiments_list[self.curr_exp_index] = Step(self.solution_input.text(), self.stage_dropdown.currentText(),
+                                                                     self.blocks[
                                                            self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                                           self.vcfgs[
+                                                                     self.vcfgs[
                                                            self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                                           self.gcode[
+                                                                     self.gcode[
                                                            self.gcode_dropdown.currentText()] if self.gcode else None,
-                                                                           )
+                                                                     )
         if curr_block is not None:
             if curr_block.name != self.experiments_list[self.curr_exp_index].block.name:
                 self.load_block(self.experiments_list[self.curr_exp_index].block)

@@ -1,12 +1,11 @@
 import platform
 import sys
-from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QComboBox, QHBoxLayout, \
     QLineEdit, QGridLayout, QMessageBox
 from PyQt6.QtCore import Qt
 from qt_material import apply_stylesheet
 
-from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init
+from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init, ROOT_DIR
 from view.combi_control import CombiControlWindow
 from view.electrode_setup import ElectrodeSetupWindow
 from view.debug_window import DebugWindow
@@ -16,7 +15,7 @@ from database.db_utils import get_connection, is_valid_connection
 
 def change_theme(theme):
     config.set('General', 'theme', theme)
-    with open(Path(__file__).parent / 'config.ini', 'w') as configfile:
+    with open(ROOT_DIR / 'config.ini', 'w') as configfile:
         config.write(configfile)
     apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
 
@@ -92,12 +91,12 @@ class LaunchWindow(QWidget):
         config = config_init()
         config.set('General', 'user', self.user_input.text())
         config.set('General', 'customer', self.customer_input.text())
-        with open(Path(__file__).parent / 'config.ini', 'w') as configfile:
+        with open(ROOT_DIR / 'config.ini', 'w') as configfile:
             config.write(configfile)
 
         # Get database connection credentials
         try:
-            with open(Path(__file__).parent / 'credentials.json', 'r') as file:
+            with open(ROOT_DIR / 'credentials.json', 'r') as file:
                 credentials = json.load(file)
         except FileNotFoundError:
             QMessageBox.warning(self, "File Not Found",
@@ -140,7 +139,6 @@ class LaunchWindow(QWidget):
 
 if __name__ == "__main__":
     extra = {
-        # Font
         'font_family': 'Courier New',
     }
 
@@ -148,7 +146,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     config = config_init()
-
     theme = config.get('General', 'theme')
     apply_stylesheet(app, theme=theme, extra=extra, css_file='view/stylesheet.css')
 

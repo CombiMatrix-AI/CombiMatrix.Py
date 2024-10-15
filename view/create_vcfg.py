@@ -1,4 +1,3 @@
-import os
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QGridLayout, QPushButton, QLineEdit, QLabel, QCheckBox
 from PyQt6.QtCore import pyqtSignal
 
@@ -120,10 +119,10 @@ class CreateVcfgWindow(QMainWindow):
         cv_name = self.cv_name_input.text()  # Assuming you want to generate a common name or you can provide input for this
 
         # Ensure the cv_configs directory exists
-        cv_configs_dir = os.path.join(ROOT_DIR, 'vcfgs')
+        cv_configs_dir = ROOT_DIR / 'vcfgs'
 
         # Write the content to a .cv.vcfg file in the cv_configs folder
-        with open(os.path.join(cv_configs_dir, f"{cv_name}.cv.vcfg"), "w") as cv_file:
+        with open(cv_configs_dir / f"{cv_name}.cv.vcfg", "w") as cv_file:
             cv_file.write(cv_config_content)
 
         self.item_created.emit(f"CV Config Created, {cv_name}")

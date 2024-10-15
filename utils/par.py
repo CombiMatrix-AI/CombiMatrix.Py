@@ -1,4 +1,3 @@
-import os
 import sys
 import time
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ from utils.ui_utils import ROOT_DIR
 
 class PAR:
     def __init__(self, address):
-        self.api = KBIO_api(os.path.join(os.path.dirname(__file__), "lib", "EClib64.dll"))  # Init self.api
+        self.api = KBIO_api(ROOT_DIR / "lib" / "EClib64.dll")  # Init self.api
         self.channel = 4 # TODO: GENERALIZE LATER
 
         self.id, device_info = self.api.Connect(address)   # BL_Connect
