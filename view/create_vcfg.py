@@ -1,3 +1,5 @@
+import json
+
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QWidget, QGridLayout, QPushButton, QLineEdit, QLabel, QCheckBox
 from PyQt6.QtCore import pyqtSignal
 
@@ -102,27 +104,22 @@ class CreateVcfgWindow(QMainWindow):
         begin_i_val = float(self.begin_i_input.text())
         end_i_val = float(self.end_i_input.text())
 
-        cv_config_content = (
-            "technique = 'CV'\n"
-            f"vs_init = {vs_init_vals}\n"
-            f"v_step = {v_step_vals}\n"
-            f"scan_rate = {scan_rate_vals}\n"
-            "scan_number = 2\n"
-            f"record_de = {record_de_val}\n"
-            f"average_de = {average_de_val}\n"
-            f"n_cycles = {n_cycles_val}\n"
-            f"begin_i = {begin_i_val}\n"
-            f"end_i = {end_i_val}\n"
+        cv_config_dict = {
+            "vs_initial": vs_init_vals,
+            "Voltage_step": v_step_vals,
+            "Scan_Rate": scan_rate_vals,
+            "Scan_number": 2,
+            "Record_every_dE": record_de_val,
+            "Average_over_dE": average_de_val,
+            "N_Cycles": n_cycles_val,
+            "Begin_measuring_I": begin_i_val,
+            "End_measuring_I": end_i_val
+        }
 
-        )
-
-        cv_name = self.cv_name_input.text()  # Assuming you want to generate a common name or you can provide input for this
-
-        # Ensure the cv_configs directory exists
-        cv_configs_dir = ROOT_DIR / 'vcfgs'
+        cv_name = f"{self.cv_name_input.text()}.cv"  # Assuming you want to generate a common name or you can provide input for this
 
         # Write the content to a .cv.vcfg file in the cv_configs folder
-        with open(cv_configs_dir / f"{cv_name}.cv.vcfg", "w") as cv_file:
-            cv_file.write(cv_config_content)
+        with open(ROOT_DIR / 'vcfgs' / f"{cv_name}.vcfg", "w") as cv_file:
+            json.dump(cv_config_dict, cv_file, indent=4)
 
-        self.item_created.emit(f"CV Config Created, {cv_name}")
+        self.item_created.emit(f"PAR Config Created, {cv_name}")

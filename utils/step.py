@@ -1,6 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Any
-
 
 @dataclass
 class Block:
@@ -15,12 +13,7 @@ class Block:
 class Vcfg:
     name: str
     technique: str
-    configs: Any
-
-@dataclass
-class Gcode:
-    name: str
-    file: str
+    configs: dict
 
 
 class Step:
@@ -53,6 +46,6 @@ class Step:
             f'Block: {self.block.name[:10]:10}' if self.block else '',
             f'Mode: {self.vcfg.technique[:5]:5}' if self.vcfg else '',
             f'Vcfg: {self.vcfg.name[:10]:10}' if self.vcfg else '',
-            f'Well: {self.gcode.name[:5]:5}' if self.gcode else ''
+            f'Well: {self.gcode[:5]:5}' if self.gcode else ''
         ]
         return ' '.join(part for part in parts if part)

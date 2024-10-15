@@ -1,24 +1,16 @@
 import platform
 import sys
+import json
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QComboBox, QHBoxLayout, \
     QLineEdit, QGridLayout, QMessageBox
 from PyQt6.QtCore import Qt
-from qt_material import apply_stylesheet
+import faulthandler
 
-from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init, ROOT_DIR
+from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init, change_theme, ROOT_DIR
 from view.combi_control import CombiControlWindow
 from view.electrode_setup import ElectrodeSetupWindow
 from view.debug_window import DebugWindow
-
-import json
 from database.db_utils import get_connection, is_valid_connection
-
-def change_theme(theme):
-    config.set('General', 'theme', theme)
-    with open(ROOT_DIR / 'config.ini', 'w') as configfile:
-        config.write(configfile)
-    apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
-
 
 class LaunchWindow(QWidget):
     def __init__(self):
@@ -33,6 +25,8 @@ class LaunchWindow(QWidget):
         title.setProperty('class', 'title')
 
         config = config_init()
+
+        change_theme(config.get('General', 'theme'))
 
         self.user_input = QLineEdit(self)
         self.user_input.setText(config.get('General', 'user'))
@@ -129,7 +123,7 @@ class LaunchWindow(QWidget):
     def launch_combi(self):
         self.debug_window = DebugWindow()
         self.debug_window.show()
-        sys.stdout = self.debug_window  # Redirect standard output to text widget
+        #sys.stdout = self.debug_window  # Redirect standard output to text widget
 
         self.combi_window = CombiControlWindow()
         self.combi_window.show()
@@ -138,16 +132,9 @@ class LaunchWindow(QWidget):
 
 
 if __name__ == "__main__":
-    extra = {
-        'font_family': 'Courier New',
-    }
-
-
     app = QApplication(sys.argv)
 
-    config = config_init()
-    theme = config.get('General', 'theme')
-    apply_stylesheet(app, theme=theme, extra=extra, css_file='view/stylesheet.css')
+    faulthandler.enable()
 
     window = LaunchWindow()
     window.show()

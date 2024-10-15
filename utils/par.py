@@ -39,10 +39,10 @@ class PAR:
             print("> kernel must be loaded in order to run the experiment")
             sys.exit(-1)
 
-    def set_parameters(self, vcfg):
+    def create_parameters(self, configs):
         # Convert to dictionary and iterate through key-value pairs
         parameter_steps = list()
-        for key, value in asdict(vcfg.configs).items():
+        for key, value in configs.items():
             if isinstance(value, list):
                 for i in range(len(value)):
                     parameter = make_ecc_parm(self.api, ECC_parm(key, type(value[i])), value[i], i)
@@ -55,8 +55,6 @@ class PAR:
 
         ecc_parms = make_ecc_parms(self.api, *parameter_steps)
         return ecc_parms
-
-        
 
     def cyclic_voltammetry(self, cv, index): #TODO: GENERALIZE
         vs_init = [False, False, False, False, False] # TODO: fix CV data object = cv.vs_init

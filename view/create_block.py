@@ -1,3 +1,4 @@
+import json
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QVBoxLayout, QMainWindow, QWidget, QHBoxLayout, QLineEdit, QPushButton, QSpacerItem, \
     QSizePolicy
@@ -66,21 +67,17 @@ class CreateBlockWindow(QMainWindow):
         block_name = self.block_name_input.text()
 
         # Create the content for the .block file
-        block_file_content = (
-            "[Block Config]\n"
-            f"Number Rows = {width}\n"
-            f"Number Columns = {length}\n"
-            f"Start Row = {first_row}\n"
-            f"Start Column = {first_col}\n"
-            f'Definition = {block_definition}\n'
-        )
-
-        # Ensure the blocks directory exists
-        blocks_dir = ROOT_DIR / 'blocks'
+        block_file_dict = {
+            "num_rows" : width,
+            "num_cols" : length,
+            "start_row" : first_row,
+            "start_col" : first_col,
+            "definition" : block_definition
+        }
 
         # Write the content to a .block file in the blocks folder
-        with open(blocks_dir / f"{block_name}.block", "w") as block_file:
-            block_file.write(block_file_content)
+        with open(ROOT_DIR / 'blocks' / f"{block_name}.block", "w") as block_file:
+            json.dump(block_file_dict, block_file, indent=4)
 
         self.grid_widget.clear()
         self.item_created.emit(f"Block Created, {block_name}")

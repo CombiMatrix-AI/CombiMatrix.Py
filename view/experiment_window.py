@@ -1,17 +1,16 @@
 import platform
 import random
+import time
 
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLayout, QWidget, QDialog, QMainWindow, \
     QApplication, QComboBox, QListWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QDialogButtonBox, \
     QMessageBox
 from grbl_streamer import GrblStreamer
-import time
 
 from utils.step import Step
-from utils import fileio
-from utils.ui_utils import ROOT_DIR, get_robot_enabled, get_par_enabled, get_counter_electrode, \
-    get_reference_electrode, get_working_electrode, config_init
+from utils.ui_utils import ROOT_DIR, get_robot_enabled, get_par_enabled, get_counter_electrode, get_reference_electrode, \
+    get_working_electrode, config_init, load_block_dict, load_vcfg_dict
 from view.create_block import CreateBlockWindow
 from view.create_vcfg import CreateVcfgWindow
 
@@ -21,8 +20,6 @@ if platform.system() != 'Darwin':
 from view.grid_widget import GridWidget
 from view.robot_window import RobotWindow
 
-import faulthandler
-faulthandler.enable()
 
 def grbl_callback(eventstring, *data):
     args = []
@@ -30,10 +27,12 @@ def grbl_callback(eventstring, *data):
         args.append(str(d))
     print("GRBL CALLBACK: event={} data={}".format(eventstring.ljust(30), ", ".join(args)))
 
+
 def init_adlink():
     adlink_card = Adlink()
     print("DEBUG MESSAGE: Adlink Card Initialized")
     return adlink_card
+
 
 def init_par():
     config = config_init()
@@ -41,6 +40,7 @@ def init_par():
     par = PAR(kbio_port)
     print("DEBUG MESSAGE: EC-Lab PAR Initialized")
     return par
+
 
 def init_robot():
     grbl = GrblStreamer(grbl_callback)
@@ -82,12 +82,8 @@ class SolutionDialog(QDialog):
         self.setLayout(layout)
 
     def get_data(self):
-        return {
-            'cas': self.cas_input.text(),
-            'stock': self.stock_input.text(),
-            'amount': self.amount_input.text(),
-            'concentration': self.concentration_input.text()
-        }
+        return {'cas': self.cas_input.text(), 'stock': self.stock_input.text(), 'amount': self.amount_input.text(),
+                'concentration': self.concentration_input.text()}
 
 
 class ExperimentWindow(QMainWindow):
@@ -95,12 +91,12 @@ class ExperimentWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("CombiMatrixAI")
 
-        self.config = config_init()
+        config = config_init()
 
         self.enable_robot = get_robot_enabled()
         self.enable_par = get_par_enabled()
         self.enable_adlink = any(electrode.startswith("Chip: CBMX") for electrode in
-                            [get_counter_electrode(), get_working_electrode(), get_reference_electrode()])
+                                 [get_counter_electrode(), get_working_electrode(), get_reference_electrode()])
 
         if not (self.enable_robot or self.enable_par or self.enable_adlink):
             msg_box = QMessageBox(self)
@@ -123,7 +119,7 @@ class ExperimentWindow(QMainWindow):
                 self.adlink_card = init_adlink()
 
             self.blocks_dir = ROOT_DIR / 'blocks'
-            self.blocks = fileio.from_folder(self.blocks_dir, '.block')
+            self.blocks = load_block_dict()
 
             self.create_block_window = CreateBlockWindow()
             self.create_block_window.item_created.connect(self.item_created)
@@ -156,8 +152,7 @@ class ExperimentWindow(QMainWindow):
 
             create_vcfg_button.clicked.connect(self.create_vcfg_window.show)
 
-            self.vcfg_dir = ROOT_DIR / 'vcfgs'
-            self.vcfgs = fileio.from_folder(self.vcfg_dir, '.vcfg')
+            self.vcfgs = load_vcfg_dict()
 
             self.vcfgs_dropdown.addItems(list(self.vcfgs.keys()))
         else:
@@ -170,27 +165,25 @@ class ExperimentWindow(QMainWindow):
         execute_gcode_button = QPushButton("Execute G-code", self)
         self.gcode = {}
         if self.enable_robot:
-            self.grbl = init_robot()
+            if platform.system() != 'Darwin':
+                self.grbl = init_robot()
+                self.robot_window = RobotWindow(self.grbl)
+                robot_controls_button.clicked.connect(self.robot_window.show)
 
             self.gcode_dir = ROOT_DIR / 'gcode'
-            self.gcode = fileio.from_folder(self.gcode_dir, '.gcode')
+            self.gcode = [filename.stem for filename in self.gcode_dir.iterdir()]
 
-            self.robot_window = RobotWindow(self.grbl)
-            robot_controls_button.clicked.connect(self.robot_window.show)
+            self.gcode_dropdown.addItems(self.gcode)
 
-            self.gcode_dropdown.addItems(list(self.gcode.keys()))
-
-            execute_gcode_button.clicked.connect(
-                lambda: self.execute_gcode(self.experiments_list[self.curr_exp_index].gcode))
+            execute_gcode_button.clicked.connect(lambda: self.execute_gcode(self.steps_list[self.step_index].gcode))
         else:
             robot_controls_button.setEnabled(False)
             gcode_label.setEnabled(False)
             self.gcode_dropdown.setEnabled(False)
             execute_gcode_button.setEnabled(False)
 
-
-        run_cv_button = QPushButton("Run Experiments", self)
-        run_cv_button.clicked.connect(self.run_experiments)
+        run_exp_button = QPushButton("Run Experiment", self)
+        run_exp_button.clicked.connect(self.run_experiment)
         exit_button = QPushButton("Exit", self)
         exit_button.clicked.connect(QApplication.instance().quit)
 
@@ -203,27 +196,25 @@ class ExperimentWindow(QMainWindow):
         self.stage_dropdown = QComboBox(self)
         self.stage_dropdown.addItems(["Assay", "Clean", "Deposition"])
 
-        save_experiment_button = QPushButton("New Experiment", self)
-        save_experiment_button.clicked.connect(self.save_experiment)
-        update_experiment_button = QPushButton("Update Experiment", self)
-        update_experiment_button.clicked.connect(self.update_experiment)
-        delete_experiment_button = QPushButton("Delete Experiment", self)
-        delete_experiment_button.clicked.connect(self.delete_experiment)
+        save_step_button = QPushButton("New Step", self)
+        save_step_button.clicked.connect(self.save_step)
+        update_step_button = QPushButton("Update Step", self)
+        update_step_button.clicked.connect(self.update_step)
+        delete_step_button = QPushButton("Delete Step", self)
+        delete_step_button.clicked.connect(self.delete_step)
 
-        self.curr_exp_index = -1
-        self.experiments_list = [Step("null",
-                                                       "null",
-                                                 self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                 self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                 self.gcode[self.gcode_dropdown.currentText()] if self.gcode else None,
-                                                 )]
+        self.step_index = -1
+        self.steps_list = [
+            Step("null", "null", self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
+                 self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                 self.gcode_dropdown.currentText() if self.gcode else None)]
         if self.enable_adlink:
             self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
-        self.experiments_tab = QListWidget(self)
-        self.experiments_tab.currentItemChanged.connect(self.exp_index_changed)
-        self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
-        self.experiments_tab.setFixedSize(700, 500)
+        self.steps_tab = QListWidget(self)
+        self.steps_tab.currentItemChanged.connect(self.step_index_changed)
+        self.steps_tab.addItems([str(exp) for exp in self.steps_list])
+        self.steps_tab.setFixedSize(700, 500)
         ############################### WINDOW LAYOUT #################################
 
         layout_master = QVBoxLayout()
@@ -233,9 +224,8 @@ class ExperimentWindow(QMainWindow):
         layout_top.addWidget(create_vcfg_button, 0, 1)
         layout_top.addWidget(robot_controls_button, 0, 2)
         layout_top.addWidget(chip_test_button, 0, 3)
-        layout_top.addWidget(run_cv_button, 0, 4)
-        spacer_top = QSpacerItem(100, 0, QSizePolicy.Policy.Fixed,
-                                 QSizePolicy.Policy.Fixed)
+        layout_top.addWidget(run_exp_button, 0, 4)
+        spacer_top = QSpacerItem(100, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         layout_top.addItem(spacer_top, 0, 5)
         layout_top.addWidget(exit_button, 0, 6)
         layout_master.addLayout(layout_top)
@@ -253,22 +243,20 @@ class ExperimentWindow(QMainWindow):
         layout_middle_grid.addWidget(execute_gcode_button, 3, 2)
         layout_middle_grid.addWidget(stage_label, 4, 0)
         layout_middle_grid.addWidget(self.stage_dropdown, 4, 1)
-        layout_middle_grid.addWidget(save_experiment_button, 5, 0)
-        layout_middle_grid.addWidget(update_experiment_button, 5, 1)
-        layout_middle_grid.addWidget(delete_experiment_button, 5, 2)
+        layout_middle_grid.addWidget(save_step_button, 5, 0)
+        layout_middle_grid.addWidget(update_step_button, 5, 1)
+        layout_middle_grid.addWidget(delete_step_button, 5, 2)
         layout_middle.addLayout(layout_middle_grid)
-        layout_middle.addWidget(self.experiments_tab)
+        layout_middle.addWidget(self.steps_tab)
         if self.enable_adlink:
             layout_middle.addWidget(self.grid_widget, 0,
-                                QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
+                                    QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignRight)  # Place the grid widget next to the other widgets
         layout_master.addLayout(layout_middle)
 
         layout_master.addWidget(
-            QLabel(
-                f"User: {self.config.get('General', 'user')}   Customer: {self.config.get('General', 'customer')}   "
-                f"Robot On: {self.enable_robot}   PAR On: {self.enable_par}   Counter: {get_counter_electrode()}   "
-                f"Reference: {get_reference_electrode()}   Working: {get_working_electrode()}"
-                , self))
+            QLabel(f"User: {config.get('General', 'user')}   Customer: {config.get('General', 'customer')}   "
+                   f"Robot On: {self.enable_robot}   PAR On: {self.enable_par}   Counter: {get_counter_electrode()}   "
+                   f"Reference: {get_reference_electrode()}   Working: {get_working_electrode()}", self))
 
         container = QWidget()
         container.setLayout(layout_master)
@@ -281,9 +269,9 @@ class ExperimentWindow(QMainWindow):
             self.solution_input.setText(f"{data['cas']}, {data['stock']}, {data['amount']}, {data['concentration']}")
             print(data)  # Add more logic here as needed
 
-    def run_experiments(self):
+    def run_experiment(self):
         index = 0
-        for exp in self.experiments_list:
+        for exp in self.steps_list:
             if self.enable_robot:
                 self.execute_gcode(exp.gcode)
             if self.enable_adlink:
@@ -296,14 +284,14 @@ class ExperimentWindow(QMainWindow):
 
     def item_created(self, text):
         if text.split(',')[0].strip() == "Block Created":
-            self.blocks = fileio.from_folder(self.blocks_dir, '.block')
+            self.blocks = load_block_dict()
             self.blocks_dropdown.clear()
             self.blocks_dropdown.addItems(list(self.blocks.keys()))
             new_index = self.blocks_dropdown.findText(text.split(',')[1].strip())
             self.blocks_dropdown.setCurrentIndex(new_index)
             self.load_block(self.blocks[self.blocks_dropdown.currentText()])
-        elif text.split(',')[0].strip() == "CV Config Created":
-            self.vcfgs = fileio.from_folder(self.vcfg_dir, '.vcfg')
+        elif text.split(',')[0].strip() == "PAR Config Created":
+            self.vcfgs = load_vcfg_dict()
             self.vcfgs_dropdown.clear()
             self.vcfgs_dropdown.addItems(list(self.vcfgs.keys()))
             new_index = self.vcfgs_dropdown.findText(text.split(',')[1].strip())
@@ -336,31 +324,26 @@ class ExperimentWindow(QMainWindow):
 
         for row in range(64):
             for column in range(16):
-                self.grid_widget.set_square_color(row, column,
-                                                  chipmap_in[row][column], chipmap_out[row][column])
+                self.grid_widget.set_square_color(row, column, chipmap_in[row][column], chipmap_out[row][column])
 
         if chipmap_in == chipmap_out:
             print(f"Test {i} Passed")
         else:
             print(f"Test {i} Failed")
-            differences = [
-                (r, c, chipmap_in[r][c], chipmap_out[r][c])
-                for r in range(len(chipmap_in))
-                for c in range(len(chipmap_in[r]))
-                if chipmap_in[r][c] != chipmap_out[r][c]
-            ]
+            differences = [(r, c, chipmap_in[r][c], chipmap_out[r][c]) for r in range(len(chipmap_in)) for c in
+                           range(len(chipmap_in[r])) if chipmap_in[r][c] != chipmap_out[r][c]]
             for row, col, value1, value2 in differences:
                 print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
 
     def execute_gcode(self, gcode):
-        gcode_file = self.gcode_dir / gcode.file
+        gcode_file = self.gcode_dir / f"{gcode}.gcode"
         self.grbl.load_file(gcode_file)
         self.grbl.job_run()
 
     def tile_block(self):
-        self.experiments_list[self.curr_exp_index].tile_block()
+        self.steps_list[self.step_index].tile_block()
 
-        block = self.experiments_list[self.curr_exp_index].block
+        block = self.steps_list[self.step_index].block
         self.load_block(block)
 
     def load_block(self, block, set_card=False):
@@ -375,58 +358,51 @@ class ExperimentWindow(QMainWindow):
         if set_card:
             self.adlink_card.set_chip_map(1, current_map)
 
-    def exp_index_changed(self, i):  # Not an index, i is a QListWidgetItem
-        print(f"Row changed to {self.experiments_tab.row(i)}")
-        self.curr_exp_index = self.experiments_tab.row(i)
-        if self.curr_exp_index != -1:  # Dont load anything if list is empty
-            self.solution_input.setText(self.experiments_list[self.curr_exp_index].solution)
+    def step_index_changed(self, i):  # Not an index, i is a QListWidgetItem
+        print(f"Row changed to {self.steps_tab.row(i)}")
+        self.step_index = self.steps_tab.row(i)
+        if self.step_index != -1:  # Dont load anything if list is empty
+            self.solution_input.setText(self.steps_list[self.step_index].solution)
             if self.enable_adlink:
-                self.load_block(self.experiments_list[self.curr_exp_index].block)
-                index = self.blocks_dropdown.findText(self.experiments_list[self.curr_exp_index].block.name)
+                self.load_block(self.steps_list[self.step_index].block)
+                index = self.blocks_dropdown.findText(self.steps_list[self.step_index].block.name)
                 self.blocks_dropdown.setCurrentIndex(index)
             if self.enable_par:
-                index = self.vcfgs_dropdown.findText(self.experiments_list[self.curr_exp_index].vcfg.name)
+                index = self.vcfgs_dropdown.findText(self.steps_list[self.step_index].vcfg.name)
                 self.vcfgs_dropdown.setCurrentIndex(index)
             if self.enable_robot:
-                index = self.gcode_dropdown.findText(self.experiments_list[self.curr_exp_index].gcode.name)
+                index = self.gcode_dropdown.findText(self.steps_list[self.step_index].gcode)
                 self.gcode_dropdown.setCurrentIndex(index)
 
-    def save_experiment(self):
+    def save_step(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
-        self.experiments_list.append(
-            Step(self.solution_input.text(), self.stage_dropdown.currentText(), self.blocks[
-                                                           self.blocks_dropdown.currentText()] if self.blocks else None,
-                            self.vcfgs[
-                                                           self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                            self.gcode[
-                                                           self.gcode_dropdown.currentText()] if self.gcode else None,
-                            ))
-        self.experiments_tab.addItem(str(self.experiments_list[-1]))
+        self.steps_list.append(Step(self.solution_input.text(), self.stage_dropdown.currentText(),
+                                    self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
+                                    self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                                    self.gcode_dropdown.currentText() if self.gcode else None))
+        self.steps_tab.addItem(str(self.steps_list[-1]))
 
-    def update_experiment(self):
+    def update_step(self):
         # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
-        curr_block = self.experiments_list[self.curr_exp_index].block
-        self.experiments_list[self.curr_exp_index] = Step(self.solution_input.text(), self.stage_dropdown.currentText(),
-                                                                     self.blocks[
-                                                           self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                                     self.vcfgs[
-                                                           self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                                     self.gcode[
-                                                           self.gcode_dropdown.currentText()] if self.gcode else None,
-                                                                     )
+        curr_block = self.steps_list[self.step_index].block
+        self.steps_list[self.step_index] = Step(self.solution_input.text(), self.stage_dropdown.currentText(),
+                                                self.blocks[
+                                                    self.blocks_dropdown.currentText()] if self.blocks else None,
+                                                self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                                                self.gcode_dropdown.currentText() if self.gcode else None)
         if curr_block is not None:
-            if curr_block.name != self.experiments_list[self.curr_exp_index].block.name:
-                self.load_block(self.experiments_list[self.curr_exp_index].block)
+            if curr_block.name != self.steps_list[self.step_index].block.name:
+                self.load_block(self.steps_list[self.step_index].block)
             else:
-                self.experiments_list[self.curr_exp_index].block = curr_block
-        item = self.experiments_tab.item(self.curr_exp_index)
+                self.steps_list[self.step_index].block = curr_block
+        item = self.steps_tab.item(self.step_index)
         if item:
-            item.setText(str(self.experiments_list[self.curr_exp_index]))
+            item.setText(str(self.steps_list[self.step_index]))
 
-    def delete_experiment(self):
-        if self.curr_exp_index == -1:
+    def delete_step(self):
+        if self.step_index == -1:
             return
-        del self.experiments_list[self.curr_exp_index]
-        self.experiments_tab.clear()
-        self.experiments_tab.addItems([str(exp) for exp in self.experiments_list])
-        self.curr_exp_index = -1
+        del self.steps_list[self.step_index]
+        self.steps_tab.clear()
+        self.steps_tab.addItems([str(exp) for exp in self.steps_list])
+        self.step_index = -1

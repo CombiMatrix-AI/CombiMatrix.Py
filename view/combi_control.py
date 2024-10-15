@@ -1,13 +1,12 @@
+import json
 import platform
 import random
 
 from PyQt6.QtWidgets import QMainWindow, QPushButton, QComboBox, QWidget, QGridLayout, QApplication
 
-from utils import fileio
-
 if platform.system() != 'Darwin':
     from utils.adlink import Adlink
-from utils.ui_utils import ROOT_DIR
+from utils.ui_utils import load_block_dict
 from view.create_block import CreateBlockWindow
 from view.grid_widget import GridWidget
 from utils.step import Block
@@ -22,8 +21,7 @@ class CombiControlWindow(QMainWindow):
             self.adlink_card = Adlink()
         print("DEBUG MESSAGE: Adlink Card Initialized")
 
-        self.blocks_dir = ROOT_DIR / 'blocks'
-        self.blocks = fileio.from_folder(self.blocks_dir, '.block')
+        self.blocks = load_block_dict()
 
         self.create_block_window = CreateBlockWindow()
         self.create_block_window.item_created.connect(self.item_created)
@@ -73,7 +71,7 @@ class CombiControlWindow(QMainWindow):
             self.current_block = self.blocks[self.blocks_dropdown.currentText()]
 
     def item_created(self, text):
-        self.blocks = fileio.from_folder(self.blocks_dir, '.block')
+        self.blocks = load_block_dict()
         self.blocks_dropdown.clear()
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
         new_index = self.blocks_dropdown.findText(text.split(',')[1].strip())
@@ -151,6 +149,7 @@ class CombiControlWindow(QMainWindow):
             ]
             for row, col, value1, value2 in differences:
                 print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
+
 
 
 
