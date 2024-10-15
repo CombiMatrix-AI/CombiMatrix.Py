@@ -129,5 +129,7 @@ if __name__ == "__main__":
 
     window = LaunchWindow()
     window.show()
+    window.raise_()
+    window.activateWindow()
 
     sys.exit(app.exec())

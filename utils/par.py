@@ -21,6 +21,10 @@ class PAR:
         print(f"> device[{address}] info :")
         print(device_info)
 
+        plugged_channels = list(self.api.PluggedChannels(self.id))
+        print("> Plugged channels ...")
+        print(plugged_channels)
+
         self.board_type = self.api.GetChannelBoardType(self.id, self.channel)
 
         print("> Loading firmware ...")         # Load firmware
@@ -124,7 +128,7 @@ class PAR:
             time.sleep(1)
 
         # pop open a matplotlib window with the Iwe against the Ewe
-        df = pd.read_csv(f"{filename}.csv")
+        df = pd.read_csv(output_path)
 
         plt.plot(df['Ewe (V)'], df['Iwe (A)'])
         plt.xlabel('Ewe (V)')
@@ -133,7 +137,7 @@ class PAR:
 
         csvfile.close()
         print()
-        print(f"> {count} data have been written into {filename}.csv")
+        print(f"> {count} data points have been written into {filename}.csv")
         print("> experiment done")
 
     def release_kbio(self):
