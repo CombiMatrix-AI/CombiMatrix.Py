@@ -9,7 +9,6 @@ import faulthandler
 from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init, change_theme, ROOT_DIR
 from view.combi_control import CombiControlWindow
 from view.electrode_setup import ElectrodeSetupWindow
-from view.debug_window import DebugWindow
 from database.db_utils import get_connection, is_valid_connection
 
 class LaunchWindow(QWidget):
@@ -106,10 +105,6 @@ class LaunchWindow(QWidget):
                             "Invalid database connection. Please check your credentials.")
                 return
 
-        self.debug_window = DebugWindow()
-        self.debug_window.show()
-        sys.stdout = self.debug_window  # Redirect standard output to text widget
-
         print("Connected to database")
 
         set_robot_enabled(self.robot_checkbox.isChecked())
@@ -121,10 +116,6 @@ class LaunchWindow(QWidget):
         self.close()  # Close the launch window
 
     def launch_combi(self):
-        self.debug_window = DebugWindow()
-        self.debug_window.show()
-        #sys.stdout = self.debug_window  # Redirect standard output to text widget
-
         self.combi_window = CombiControlWindow()
         self.combi_window.show()
 

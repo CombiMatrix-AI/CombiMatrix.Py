@@ -319,21 +319,21 @@ class ExperimentWindow(QMainWindow):
                 case _:
                     break
 
-        self.adlink_card.set_chip_map(channel, chipmap_in)
-        chipmap_out = self.adlink_card.get_chip_map(channel)
+            self.adlink_card.set_chip_map(channel, chipmap_in)
+            chipmap_out = self.adlink_card.get_chip_map(channel)
 
-        for row in range(64):
-            for column in range(16):
-                self.grid_widget.set_square_color(row, column, chipmap_in[row][column], chipmap_out[row][column])
+            for row in range(64):
+                for column in range(16):
+                    self.grid_widget.set_square_color(row, column, chipmap_in[row][column], chipmap_out[row][column])
 
-        if chipmap_in == chipmap_out:
-            print(f"Test {i} Passed")
-        else:
-            print(f"Test {i} Failed")
-            differences = [(r, c, chipmap_in[r][c], chipmap_out[r][c]) for r in range(len(chipmap_in)) for c in
-                           range(len(chipmap_in[r])) if chipmap_in[r][c] != chipmap_out[r][c]]
-            for row, col, value1, value2 in differences:
-                print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
+            if chipmap_in == chipmap_out:
+                print(f"Test {i} Passed")
+            else:
+                print(f"Test {i} Failed")
+                differences = [(r, c, chipmap_in[r][c], chipmap_out[r][c]) for r in range(len(chipmap_in)) for c in
+                            range(len(chipmap_in[r])) if chipmap_in[r][c] != chipmap_out[r][c]]
+                for row, col, value1, value2 in differences:
+                    print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
 
     def execute_gcode(self, gcode):
         gcode_file = self.gcode_dir / f"{gcode}.gcode"
@@ -375,7 +375,6 @@ class ExperimentWindow(QMainWindow):
                 self.gcode_dropdown.setCurrentIndex(index)
 
     def save_step(self):
-        # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
         self.steps_list.append(Step(self.solution_input.text(), self.stage_dropdown.currentText(),
                                     self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
                                     self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
@@ -383,7 +382,8 @@ class ExperimentWindow(QMainWindow):
         self.steps_tab.addItem(str(self.steps_list[-1]))
 
     def update_step(self):
-        # TODO: ADD COMPATIBILITY WITH NEW TECHNIQUES
+        if self.step_index == -1:
+            return
         curr_block = self.steps_list[self.step_index].block
         self.steps_list[self.step_index] = Step(self.solution_input.text(), self.stage_dropdown.currentText(),
                                                 self.blocks[
