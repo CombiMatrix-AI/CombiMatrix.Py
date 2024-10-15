@@ -3,8 +3,6 @@ import time
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from dataclasses import asdict
-
 from kbio.kbio_api import KBIO_api
 from kbio.kbio_tech import ECC_parm
 from kbio.kbio_tech import get_experiment_data
@@ -16,7 +14,7 @@ from utils.ui_utils import ROOT_DIR
 
 class PAR:
     def __init__(self, address):
-        self.api = KBIO_api(ROOT_DIR / "lib" / "EClib64.dll")  # Init self.api
+        self.api = KBIO_api(str(ROOT_DIR / "lib" / "EClib64.dll"))  # Init self.api
         self.channel = 4 # TODO: GENERALIZE LATER
 
         self.id, device_info = self.api.Connect(address)   # BL_Connect

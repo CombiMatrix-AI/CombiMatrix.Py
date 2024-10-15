@@ -1,7 +1,7 @@
 import platform
 from ctypes import *
 
-from ui_utils import ROOT_DIR
+from utils.ui_utils import ROOT_DIR
 
 
 class Dask91xxLib:
@@ -220,17 +220,17 @@ class Dask91xxLib:
         if "Windows" in self.strOS:
             if '32' in self.strPlatform:
                 print("System is Windows 32Bits")
-                self.libHandle = windll.LoadLibrary(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X86_WIN)
+                self.libHandle = windll.LoadLibrary(str(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X86_WIN))
             else:
                 print("System is Windows 64Bits")
-                self.libHandle = windll.LoadLibrary(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X64_WIN)
+                self.libHandle = windll.LoadLibrary(str(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X64_WIN))
         else:
             if '32' in self.strPlatform:
                 print("System is Linux 32Bits")
-                self.libHandle = cdll.LoadLibrary(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X86_LINUX)
+                self.libHandle = cdll.LoadLibrary(str(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X86_LINUX))
             else:
                 print("System is Linux 64Bits")
-                self.libHandle = cdll.LoadLibrary(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X64_LINUX)
+                self.libHandle = cdll.LoadLibrary(str(ROOT_DIR / "lib" / self.MW_DLL_FILE_NAME_X64_LINUX))
         
     def Register_Card(self, card_type, card_num):
         return self.libHandle.Register_Card(card_type, card_num)
