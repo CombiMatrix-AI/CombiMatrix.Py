@@ -1,59 +1,18 @@
 import platform
 import random
-import time
-
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLayout, QWidget, QDialog, QMainWindow, \
     QApplication, QComboBox, QListWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QDialogButtonBox, \
     QMessageBox
-from grbl_streamer import GrblStreamer
 
+import utils.ui_utils as ui_utils
 from utils.step import Step
-from utils.ui_utils import ROOT_DIR, get_robot_enabled, get_par_enabled, get_counter_electrode, get_reference_electrode, \
-    get_working_electrode, config_init, load_block_dict, load_vcfg_dict
+from utils.ui_utils import ROOT_DIR, config_init, load_block_dict, load_vcfg_dict, init_adlink, init_par, init_robot
 from view.create_block import CreateBlockWindow
 from view.create_vcfg import CreateVcfgWindow
 
-if platform.system() != 'Darwin':
-    from utils.par import PAR
-    from utils.adlink import Adlink
 from view.grid_widget import GridWidget
 from view.robot_window import RobotWindow
-
-
-def grbl_callback(eventstring, *data):
-    args = []
-    for d in data:
-        args.append(str(d))
-    print("GRBL CALLBACK: event={} data={}".format(eventstring.ljust(30), ", ".join(args)))
-
-
-def init_adlink():
-    adlink_card = Adlink()
-    print("DEBUG MESSAGE: Adlink Card Initialized")
-    return adlink_card
-
-
-def init_par():
-    config = config_init()
-    kbio_port = config.get('Ports', 'par_port')
-    par = PAR(kbio_port)
-    print("DEBUG MESSAGE: EC-Lab PAR Initialized")
-    return par
-
-
-def init_robot():
-    grbl = GrblStreamer(grbl_callback)
-    grbl.setup_logging()
-    config = config_init()
-    grbl_port = config.get('Ports', 'robot_port')
-    grbl.cnect(grbl_port, 115200)
-    print("DEBUG MESSAGE: GRBL Connected")
-    time.sleep(1)  # Let grbl connect
-    grbl.killalarm()  # Turn off alarm on startup
-    print("DEBUG MESSAGE: GRBL Alarm Turned off")
-    return grbl
-
 
 class SolutionDialog(QDialog):
     def __init__(self, parent=None):
@@ -93,20 +52,10 @@ class ExperimentWindow(QMainWindow):
 
         config = config_init()
 
-        self.enable_robot = get_robot_enabled()
-        self.enable_par = get_par_enabled()
+        self.enable_robot = ui_utils.robot_enabled
+        self.enable_par = ui_utils.par_enabled
         self.enable_adlink = any(electrode.startswith("Chip: CBMX") for electrode in
-                                 [get_counter_electrode(), get_working_electrode(), get_reference_electrode()])
-
-        if not (self.enable_robot or self.enable_par or self.enable_adlink):
-            msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.Icon.Critical)
-            msg_box.setText("Nothing is currently being controlled!"
-                            "\n\n"
-                            "Please enable either the robot, the PAR, or use a CMBX chip")
-            msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-            msg_box.buttonClicked.connect(QApplication.instance().quit)
-            msg_box.exec()
+                                 [ui_utils.counter_electrode, ui_utils.working_electrode, ui_utils.reference_electrode])
 
         create_block_button = QPushButton("Create Block", self)
         chip_test_button = QPushButton("Run Chip Test", self)
@@ -255,19 +204,12 @@ class ExperimentWindow(QMainWindow):
 
         layout_master.addWidget(
             QLabel(f"User: {config.get('General', 'user')}   Customer: {config.get('General', 'customer')}   "
-                   f"Robot On: {self.enable_robot}   PAR On: {self.enable_par}   Counter: {get_counter_electrode()}   "
-                   f"Reference: {get_reference_electrode()}   Working: {get_working_electrode()}", self))
+                   f"Robot: {self.enable_robot}   PAR: {self.enable_par}   Counter: {ui_utils.counter_electrode}   "
+                   f"Reference: {ui_utils.reference_electrode}   Working: {ui_utils.working_electrode}", self))
 
         container = QWidget()
         container.setLayout(layout_master)
         self.setCentralWidget(container)
-
-    def enter_solution(self):
-        dialog = SolutionDialog(self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            data = dialog.get_data()
-            self.solution_input.setText(f"{data['cas']}, {data['stock']}, {data['amount']}, {data['concentration']}")
-            print(data)  # Add more logic here as needed
 
     def run_experiment(self):
         index = 0
@@ -281,21 +223,6 @@ class ExperimentWindow(QMainWindow):
 
             print("Experiment completed")
             index += 1
-
-    def item_created(self, text):
-        if text.split(',')[0].strip() == "Block Created":
-            self.blocks = load_block_dict()
-            self.blocks_dropdown.clear()
-            self.blocks_dropdown.addItems(list(self.blocks.keys()))
-            new_index = self.blocks_dropdown.findText(text.split(',')[1].strip())
-            self.blocks_dropdown.setCurrentIndex(new_index)
-            self.load_block(self.blocks[self.blocks_dropdown.currentText()])
-        elif text.split(',')[0].strip() == "PAR Config Created":
-            self.vcfgs = load_vcfg_dict()
-            self.vcfgs_dropdown.clear()
-            self.vcfgs_dropdown.addItems(list(self.vcfgs.keys()))
-            new_index = self.vcfgs_dropdown.findText(text.split(',')[1].strip())
-            self.vcfgs_dropdown.setCurrentIndex(new_index)
 
     def chip_test(self):
         channel = 1
@@ -335,11 +262,6 @@ class ExperimentWindow(QMainWindow):
                 for row, col, value1, value2 in differences:
                     print(f"Row {row}, Col {col}: chipmap_in has {value1}, chipmap_out has {value2}")
 
-    def execute_gcode(self, gcode):
-        gcode_file = self.gcode_dir / f"{gcode}.gcode"
-        self.grbl.load_file(gcode_file)
-        self.grbl.job_run()
-
     def tile_block(self):
         self.steps_list[self.step_index].tile_block()
 
@@ -358,6 +280,11 @@ class ExperimentWindow(QMainWindow):
         if set_card:
             self.adlink_card.set_chip_map(1, current_map)
 
+    def execute_gcode(self, gcode):
+        gcode_file = self.gcode_dir / f"{gcode}.gcode"
+        self.grbl.load_file(gcode_file)
+        self.grbl.job_run()
+
     def step_index_changed(self, i):  # Not an index, i is a QListWidgetItem
         print(f"Row changed to {self.steps_tab.row(i)}")
         self.step_index = self.steps_tab.row(i)
@@ -373,6 +300,28 @@ class ExperimentWindow(QMainWindow):
             if self.enable_robot:
                 index = self.gcode_dropdown.findText(self.steps_list[self.step_index].gcode)
                 self.gcode_dropdown.setCurrentIndex(index)
+
+    def item_created(self, text):
+        if text.split(',')[0].strip() == "Block Created":
+            self.blocks = load_block_dict()
+            self.blocks_dropdown.clear()
+            self.blocks_dropdown.addItems(list(self.blocks.keys()))
+            new_index = self.blocks_dropdown.findText(text.split(',')[1].strip())
+            self.blocks_dropdown.setCurrentIndex(new_index)
+            self.load_block(self.blocks[self.blocks_dropdown.currentText()])
+        elif text.split(',')[0].strip() == "PAR Config Created":
+            self.vcfgs = load_vcfg_dict()
+            self.vcfgs_dropdown.clear()
+            self.vcfgs_dropdown.addItems(list(self.vcfgs.keys()))
+            new_index = self.vcfgs_dropdown.findText(text.split(',')[1].strip())
+            self.vcfgs_dropdown.setCurrentIndex(new_index)
+
+    def enter_solution(self):
+        dialog = SolutionDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            data = dialog.get_data()
+            self.solution_input.setText(f"{data['cas']}, {data['stock']}, {data['amount']}, {data['concentration']}")
+            print(data)  # Add more logic here as needed
 
     def save_step(self):
         self.steps_list.append(Step(self.solution_input.text(), self.stage_dropdown.currentText(),

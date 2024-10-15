@@ -6,7 +6,8 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBo
 from PyQt6.QtCore import Qt
 import faulthandler
 
-from utils.ui_utils import set_robot_enabled, set_par_enabled, config_init, change_theme, ROOT_DIR
+import utils.ui_utils as ui_utils
+from utils.ui_utils import config_init, change_theme, ROOT_DIR
 from view.combi_control import CombiControlWindow
 from view.electrode_setup import ElectrodeSetupWindow
 from database.db_utils import get_connection, is_valid_connection
@@ -107,8 +108,8 @@ class LaunchWindow(QWidget):
 
         print("Connected to database")
 
-        set_robot_enabled(self.robot_checkbox.isChecked())
-        set_par_enabled(self.par_checkbox.isChecked())
+        ui_utils.robot_enabled = self.robot_checkbox.isChecked()
+        ui_utils.par_enabled = self.par_checkbox.isChecked()
 
         self.electrode_setup = ElectrodeSetupWindow()
         self.electrode_setup.show()

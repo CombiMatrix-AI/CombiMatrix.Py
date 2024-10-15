@@ -3,9 +3,7 @@ import random
 
 from PyQt6.QtWidgets import QMainWindow, QPushButton, QComboBox, QWidget, QGridLayout, QApplication
 
-if platform.system() != 'Darwin':
-    from utils.adlink import Adlink
-from utils.ui_utils import load_block_dict
+from utils.ui_utils import load_block_dict, init_adlink
 from view.create_block import CreateBlockWindow
 from view.grid_widget import GridWidget
 from utils.step import Block
@@ -17,8 +15,7 @@ class CombiControlWindow(QMainWindow):
         self.setWindowTitle("Combi Chip Control")
 
         if platform.system() != 'Darwin':
-            self.adlink_card = Adlink()
-        print("DEBUG MESSAGE: Adlink Card Initialized")
+            self.adlink_card = init_adlink()
 
         self.blocks = load_block_dict()
 

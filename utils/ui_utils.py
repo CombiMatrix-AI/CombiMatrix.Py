@@ -1,9 +1,15 @@
 import json
+import platform
+import time
 from configparser import ConfigParser
 from pathlib import Path
 from PyQt6.QtWidgets import QApplication
+from grbl_streamer import GrblStreamer
 from qt_material import apply_stylesheet
 
+if platform.system() != 'Darwin':
+    from utils.par import PAR
+    from utils.adlink import Adlink
 from utils.step import Block, Vcfg
 
 ROOT_DIR = Path(__file__).parent / '..'
@@ -31,6 +37,36 @@ def change_theme(theme):
     with open(ROOT_DIR / 'config.ini', 'w') as configfile:
         config.write(configfile)
     apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
+
+def init_adlink():
+    adlink_card = Adlink()
+    print("DEBUG MESSAGE: Adlink Card Initialized")
+    return adlink_card
+
+def init_par():
+    config = config_init()
+    kbio_port = config.get('Ports', 'par_port')
+    par = PAR(kbio_port)
+    print("DEBUG MESSAGE: EC-Lab PAR Initialized")
+    return par
+
+def init_robot():
+    grbl = GrblStreamer(grbl_callback)
+    grbl.setup_logging()
+    config = config_init()
+    grbl_port = config.get('Ports', 'robot_port')
+    grbl.cnect(grbl_port, 115200)
+    print("DEBUG MESSAGE: GRBL Connected")
+    time.sleep(1)  # Let grbl connect
+    grbl.killalarm()  # Turn off alarm on startup
+    print("DEBUG MESSAGE: GRBL Alarm Turned off")
+    return grbl
+
+def grbl_callback(eventstring, *data):
+    args = []
+    for d in data:
+        args.append(str(d))
+    print("GRBL CALLBACK: event={} data={}".format(eventstring.ljust(30), ", ".join(args)))
 
 def load_block_dict():
     blocks_dir = ROOT_DIR / 'blocks'
@@ -68,42 +104,9 @@ def load_vcfg_dict():
     return vcfgs
 
 # The below variables should be set once in the launch process and not changed again
-PAR_ENABLED = False
-def get_par_enabled():
-    return PAR_ENABLED
+robot_enabled = False
+par_enabled = False
+counter_electrode = ''
+working_electrode = ''
+reference_electrode = ''
 
-def set_par_enabled(value):
-    global PAR_ENABLED
-    PAR_ENABLED = value
-
-ROBOT_ENABLED = False
-def get_robot_enabled():
-    return ROBOT_ENABLED
-
-def set_robot_enabled(value):
-    global ROBOT_ENABLED
-    ROBOT_ENABLED = value
-
-COUNTER_ELECTRODE = ""
-def get_counter_electrode():
-    return COUNTER_ELECTRODE
-
-def set_counter_electrode(value):
-    global COUNTER_ELECTRODE
-    COUNTER_ELECTRODE = value
-
-REFERENCE_ELECTRODE = ""
-def get_reference_electrode():
-    return REFERENCE_ELECTRODE
-
-def set_reference_electrode(value):
-    global REFERENCE_ELECTRODE
-    REFERENCE_ELECTRODE = value
-
-WORKING_ELECTRODE = ""
-def get_working_electrode():
-    return WORKING_ELECTRODE
-
-def set_working_electrode(value):
-    global WORKING_ELECTRODE
-    WORKING_ELECTRODE = value

@@ -3,7 +3,8 @@ from PyQt6.QtWidgets import QPushButton, QMainWindow, QVBoxLayout, QHBoxLayout, 
 from PyQt6 import QtCore
 import pandas as pd
 
-from utils.ui_utils import ROOT_DIR, set_counter_electrode, set_working_electrode, set_reference_electrode
+from utils.ui_utils import ROOT_DIR
+import utils.ui_utils as ui_utils
 from view.experiment_window import ExperimentWindow
 
 # Load the Excel sheet
@@ -215,10 +216,15 @@ class ElectrodeSetupWindow(QMainWindow):
             QMessageBox.warning(self, "Chip Selection Error",
                         "CBMX chip can only be used on one electrode per experiment.")
             return
+        elif matches == 0 and not ui_utils.robot_enabled and not ui_utils.par_enabled:
+            QMessageBox.warning(self, "Chip Selection Error",
+                                        "Nothing is currently being controlled! "
+                                        "Please enable either the robot, the PAR, or use a CMBX chip")
+            return
         else:
-            set_counter_electrode(counter_text)
-            set_working_electrode(working_text)
-            set_reference_electrode(reference_text)
+            ui_utils.counter_electrode = counter_text
+            ui_utils.working_electrode = working_text
+            ui_utils.reference_electrode = reference_text
 
             self.experiment_window = ExperimentWindow()
             self.experiment_window.show()
