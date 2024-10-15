@@ -1,19 +1,16 @@
+import platform
 import sys
-
+import json
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QComboBox, QHBoxLayout, \
-    QLineEdit, QGridLayout
+    QLineEdit, QGridLayout, QMessageBox
 from PyQt6.QtCore import Qt
-from qt_material import apply_stylesheet
+import faulthandler
 
-from definitions import CONFIG, SET_ROBOT_ENABLED, SET_PAR_ENABLED
-from view.electrodesetup import ElectrodeSetupWindow
-from view.debugwindow import DebugWindow
-
-def change_theme(theme):
-    CONFIG.set('General', 'theme', theme)
-    with open('config.ini', 'w') as configfile:
-        CONFIG.write(configfile)
-    apply_stylesheet(QApplication.instance(), theme=theme, extra=extra, css_file='view/stylesheet.css')
+import utils.ui_utils as ui_utils
+from utils.ui_utils import config_init, change_theme, ROOT_DIR
+from view.combi_control import CombiControlWindow
+from view.electrode_setup import ElectrodeSetupWindow
+from database.db_utils import get_connection, is_valid_connection
 
 class LaunchWindow(QWidget):
     def __init__(self):
@@ -27,10 +24,14 @@ class LaunchWindow(QWidget):
         title = QLabel("Yonder Lab Control", self)
         title.setProperty('class', 'title')
 
+        config = config_init()
+
+        change_theme(config.get('General', 'theme'))
+
         self.user_input = QLineEdit(self)
-        self.user_input.setText(CONFIG.get('General', 'user'))
+        self.user_input.setText(config.get('General', 'user'))
         self.customer_input = QLineEdit(self)
-        self.customer_input.setText(CONFIG.get('General', 'customer'))
+        self.customer_input.setText(config.get('General', 'customer'))
 
         # Create checkboxes
         self.robot_checkbox = QCheckBox("Enable Robot Control", self)
@@ -39,6 +40,8 @@ class LaunchWindow(QWidget):
         # Create a button for launching the program
         launch_button = QPushButton("Launch Program", self)
         launch_button.clicked.connect(self.launch_program)
+        self.combi_button = QPushButton("Program Combi Chip Only", self)
+        self.combi_button.clicked.connect(self.launch_combi)
 
         theme_label = QLabel("Theme:", self)
         theme_dropdown = QComboBox(self)
@@ -47,6 +50,7 @@ class LaunchWindow(QWidget):
              'dark_purple.xml', 'dark_red.xml', 'dark_teal.xml', 'dark_yellow.xml', 'light_amber.xml', 'light_blue.xml',
              'light_cyan.xml', 'light_cyan_500.xml', 'light_lightgreen.xml', 'light_pink.xml', 'light_purple.xml',
              'light_red.xml', 'light_teal.xml', 'light_yellow.xml'])
+        theme = config.get('General', 'theme')
         theme_dropdown.setCurrentText(theme)
         theme_dropdown.activated.connect(lambda: change_theme(theme_dropdown.currentText()))
 
@@ -63,7 +67,11 @@ class LaunchWindow(QWidget):
         layout.addWidget(title, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.robot_checkbox)
         layout.addWidget(self.par_checkbox)
-        layout.addWidget(launch_button)
+
+        layout_buttons = QHBoxLayout()
+        layout_buttons.addWidget(launch_button)
+        layout_buttons.addWidget(self.combi_button)
+        layout.addLayout(layout_buttons)
 
         layout_bottom = QHBoxLayout()
         layout_bottom.addWidget(theme_label, 0, Qt.AlignmentFlag.AlignLeft)
@@ -74,36 +82,55 @@ class LaunchWindow(QWidget):
         self.setLayout(layout)
 
     def launch_program(self):
-        CONFIG.set('General', 'user', self.user_input.text())
-        CONFIG.set('General', 'customer', self.customer_input.text())
-        with open('config.ini', 'w') as configfile:
-            CONFIG.write(configfile)
+        config = config_init()
+        config.set('General', 'user', self.user_input.text())
+        config.set('General', 'customer', self.customer_input.text())
+        with open(ROOT_DIR / 'config.ini', 'w') as configfile:
+            config.write(configfile)
 
-        debug_window = DebugWindow()
-        debug_window.show()
-        sys.stdout = debug_window  # Redirect standard output to text widget
+        # Get database connection credentials
+        try:
+            with open(ROOT_DIR / 'credentials.json', 'r') as file:
+                credentials = json.load(file)
+        except FileNotFoundError:
+            QMessageBox.warning(self, "File Not Found",
+                                "The database credentials file was not found. "
+                                "Please add credentials.json to application directory and restart.")
+            return
 
-        SET_ROBOT_ENABLED(self.robot_checkbox.isChecked())
-        SET_PAR_ENABLED(self.par_checkbox.isChecked())
+        # Check if the database connection is valid
+        con = get_connection(credentials)
+        if platform.system() != 'Darwin': # Don't check on Loren's computer
+            if not is_valid_connection(con):
+                QMessageBox.warning(self, "No Database Connection",
+                            "Invalid database connection. Please check your credentials.")
+                return
 
-        electrode_setup = ElectrodeSetupWindow()
-        electrode_setup.show()
+        print("Connected to database")
+
+        ui_utils.robot_enabled = self.robot_checkbox.isChecked()
+        ui_utils.par_enabled = self.par_checkbox.isChecked()
+
+        self.electrode_setup = ElectrodeSetupWindow()
+        self.electrode_setup.show()
+
+        self.close()  # Close the launch window
+
+    def launch_combi(self):
+        self.combi_window = CombiControlWindow()
+        self.combi_window.show()
 
         self.close()  # Close the launch window
 
 
 if __name__ == "__main__":
-    extra = {
-        # Font
-        'font_family': 'Courier New',
-        'font_size': 14,
-    }
-
     app = QApplication(sys.argv)
-    theme = CONFIG.get('General', 'theme')
-    apply_stylesheet(app, theme=theme, extra=extra, css_file='view/stylesheet.css')
+
+    faulthandler.enable()
 
     window = LaunchWindow()
     window.show()
+    window.raise_()
+    window.activateWindow()
 
     sys.exit(app.exec())

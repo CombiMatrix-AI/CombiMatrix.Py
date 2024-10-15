@@ -1,19 +1,5 @@
 from dataclasses import dataclass, field
 
-
-@dataclass
-class CV:
-    name: str
-    start: float
-    end: float
-    E2: float
-    Ef: float
-    rate: float
-    step: float
-    N_cycles: int
-    begin_measuring_I: float
-    End_measuring_I: float
-
 @dataclass
 class Block:
     name: str
@@ -24,17 +10,19 @@ class Block:
     definition: list[list[int]] = field(default_factory=list)
 
 @dataclass
-class Gcode:
+class Vcfg:
     name: str
-    file: str
+    technique: str
+    configs: dict
 
-class Experiment:
-    def __init__(self, solution, block, technique, vcfg, gcode):
-        self.solution: str = solution
-        self.block: Block = block
-        self.technique: str = technique
-        self.vcfg: CV = vcfg
-        self.gcode: Gcode = gcode
+
+class Step:
+    def __init__(self, solution, stage, block=None, vcfg=None, gcode=None):
+        self.solution = solution
+        self.stage = stage
+        self.block = block
+        self.vcfg = vcfg
+        self.gcode = gcode
 
     def tile_block(self):
         new_start_row = self.block.start_row
@@ -49,9 +37,15 @@ class Experiment:
                 new_start_col -= self.block.num_cols
 
         self.block = Block(self.block.name, self.block.num_rows,
-                                      self.block.num_cols, new_start_row, new_start_col, self.block.definition)
+                           self.block.num_cols, new_start_row, new_start_col, self.block.definition)
 
     def __str__(self):
-        return (f'{self.solution[:24]:<25} Block: {self.block.name[:6]:<7} Mode: {self.technique[:6]:<7} '
-                f'Vcfg: {self.vcfg.name[:6]:<7} Well: {self.gcode.name[:6]:<7}')
-
+        parts = [
+            f'Soln: {self.solution[:15]:15}',
+            f'Stage: {self.stage[:10]:10}',
+            f'Block: {self.block.name[:10]:10}' if self.block else '',
+            f'Mode: {self.vcfg.technique[:5]:5}' if self.vcfg else '',
+            f'Vcfg: {self.vcfg.name[:10]:10}' if self.vcfg else '',
+            f'Well: {self.gcode[:5]:5}' if self.gcode else ''
+        ]
+        return ' '.join(part for part in parts if part)

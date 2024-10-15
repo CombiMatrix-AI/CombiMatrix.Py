@@ -129,6 +129,25 @@ def get_experiment_data(api, data, tech_name, board_type):
 
             parsed_row = {"t": t, "Ewe": Ewe, "Iwe": Iwe, "cycle": cycle}
 
+        elif tech_name == "CV":
+            inx = ix + data_info.NbCols
+            t_high, t_low, *row = data_record[ix:inx]
+
+            nb_words = len(row)
+            if nb_words != 4:
+                raise RuntimeError(f"{tech_name} : unexpected record length ({nb_words})")
+            
+            # now the order is t, Ec, I, Ewe, cycle
+            t_rel = (t_high << 32) + t_low
+            t = current_values.TimeBase * t_rel
+
+            Ece = api.ConvertChannelNumericIntoSingle(row[0], board_type)
+            Iwe = api.ConvertChannelNumericIntoSingle(row[1], board_type)
+            Ewe = api.ConvertChannelNumericIntoSingle(row[2], board_type)
+            cycle = row[3]
+
+            parsed_row = {"t": t, "Ece": Ece, "Iwe": Iwe, "Ewe": Ewe, "cycle": cycle}
+
         else:
             # besides the previous 2 known techniques, this is provided
             # to show a raw dump of the record
