@@ -2,8 +2,8 @@ import pytest
 from pytestqt.qt_compat import qt_api
 from pytestqt.qtbot import QtBot
 
-from app import LaunchWindow
-from utils.ui_utils import ROOT_DIR
+from yonder_interface.launch_window import LaunchWindow
+from yonder_interface.lib.ui import ROOT_DIR
 
 
 @pytest.fixture

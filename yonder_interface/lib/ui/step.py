@@ -16,7 +16,7 @@ class Vcfg:
     configs: dict
 
 
-class Step:
+class ExperimentStep:
     def __init__(self, solution, stage, block=None, vcfg=None, gcode=None):
         self.solution = solution
         self.stage = stage

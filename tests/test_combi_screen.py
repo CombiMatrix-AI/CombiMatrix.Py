@@ -2,7 +2,7 @@ import pytest
 from pytestqt.qt_compat import qt_api
 from pytestqt.qtbot import QtBot
 
-from app import LaunchWindow
+from yonder_interface.launch_window import LaunchWindow
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "combimatrix"}]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.10"
 pyqt6 = "^6.7.1"
 qt-material = "^2.14"
 pandas = "^2.2.3"
@@ -16,9 +16,10 @@ grbl-streamer = "^2.0.2"
 openpyxl = "^3.1.5"
 sqlalchemy = "^2.0.35"
 mysql-connector-python = "^9.0.0"
+
+[tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 pytest-qt = "^4.4.0"
-
 
 [build-system]
 requires = ["poetry-core"]

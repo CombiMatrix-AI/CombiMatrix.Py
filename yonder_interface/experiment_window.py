@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QFormLayout, QHBoxLa
     QApplication, QComboBox, QListWidget, QVBoxLayout, QGridLayout, QSpacerItem, QSizePolicy, QDialogButtonBox
 
 from .lib.ui import ui_utils, ROOT_DIR
-from .lib.ui.step import Step
+from .lib.ui.step import ExperimentStep
 from .lib.ui.ui_utils import config_init, load_block_dict, load_vcfg_dict, init_adlink, init_par, init_robot
 from .create_block import CreateBlockWindow
 from .create_vcfg import CreateVcfgWindow
@@ -152,9 +152,9 @@ class ExperimentWindow(QMainWindow):
 
         self.step_index = -1
         self.steps_list = [
-            Step("null", "null", self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
-                 self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                 self.gcode_dropdown.currentText() if self.gcode else None)]
+            ExperimentStep("null", "null", self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
+                           self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                           self.gcode_dropdown.currentText() if self.gcode else None)]
         if self.enable_adlink:
             self.load_block(self.blocks[self.blocks_dropdown.currentText()])
 
@@ -322,21 +322,21 @@ class ExperimentWindow(QMainWindow):
             print(data)  # Add more logic here as needed
 
     def save_step(self):
-        self.steps_list.append(Step(self.solution_input.text(), self.stage_dropdown.currentText(),
-                                    self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
-                                    self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                    self.gcode_dropdown.currentText() if self.gcode else None))
+        self.steps_list.append(ExperimentStep(self.solution_input.text(), self.stage_dropdown.currentText(),
+                                              self.blocks[self.blocks_dropdown.currentText()] if self.blocks else None,
+                                              self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                                              self.gcode_dropdown.currentText() if self.gcode else None))
         self.steps_tab.addItem(str(self.steps_list[-1]))
 
     def update_step(self):
         if self.step_index == -1:
             return
         curr_block = self.steps_list[self.step_index].block
-        self.steps_list[self.step_index] = Step(self.solution_input.text(), self.stage_dropdown.currentText(),
-                                                self.blocks[
+        self.steps_list[self.step_index] = ExperimentStep(self.solution_input.text(), self.stage_dropdown.currentText(),
+                                                          self.blocks[
                                                     self.blocks_dropdown.currentText()] if self.blocks else None,
-                                                self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
-                                                self.gcode_dropdown.currentText() if self.gcode else None)
+                                                          self.vcfgs[self.vcfgs_dropdown.currentText()] if self.vcfgs else None,
+                                                          self.gcode_dropdown.currentText() if self.gcode else None)
         if curr_block is not None:
             if curr_block.name != self.steps_list[self.step_index].block.name:
                 self.load_block(self.steps_list[self.step_index].block)
