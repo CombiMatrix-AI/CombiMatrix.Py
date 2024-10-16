@@ -35,7 +35,7 @@ class CombiControlWindow(QMainWindow):
         tile_block_button.clicked.connect(self.tile_block)
         
         load_block_button = QPushButton("Load Block", self)
-        load_block_button.clicked.connect(lambda: self.load_block(self.current_block))
+        load_block_button.clicked.connect(lambda: self.load_block(self.queued_block))
         self.blocks_dropdown = QComboBox(self)
         self.blocks_dropdown.setFixedWidth(200)  # Set the width of the block dropdown
         self.blocks_dropdown.addItems(list(self.blocks.keys()))
@@ -46,7 +46,8 @@ class CombiControlWindow(QMainWindow):
         
         self.grid_widget = GridWidget(5)
         
-        self.current_block = self.blocks[self.blocks_dropdown.currentText()]
+        self.queued_block = self.blocks[self.blocks_dropdown.currentText()]
+        self.current_block = None
 
         ############################### WINDOW LAYOUT #################################
 
@@ -65,7 +66,7 @@ class CombiControlWindow(QMainWindow):
 
     def on_block_changed(self):
         if self.blocks_dropdown.currentText() in self.blocks:
-            self.current_block = self.blocks[self.blocks_dropdown.currentText()]
+            self.queued_block = self.blocks[self.blocks_dropdown.currentText()]
 
     def item_created(self, text):
         self.blocks = load_block_dict()
@@ -92,6 +93,7 @@ class CombiControlWindow(QMainWindow):
         self.load_block(self.current_block)
 
     def load_block(self, block):
+        self.current_block = block
         # Logic for loading the block
         self.grid_widget.clear()
         current_map = [[0] * 16 for _ in range(64)]

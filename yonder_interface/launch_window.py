@@ -74,7 +74,7 @@ class LaunchWindow(QWidget):
         layout_bottom = QHBoxLayout()
         layout_bottom.addWidget(theme_label, 0, Qt.AlignmentFlag.AlignLeft)
         layout_bottom.addWidget(theme_dropdown, 10, Qt.AlignmentFlag.AlignLeft)
-        layout_bottom.addWidget(QLabel("Yonder, App Version: Pre-Beta"), 0, Qt.AlignmentFlag.AlignRight)
+        layout_bottom.addWidget(QLabel("Yonder, App Version: 101624"), 0, Qt.AlignmentFlag.AlignRight)
         layout.addLayout(layout_bottom)
 
         self.setLayout(layout)
