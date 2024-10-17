@@ -1,0 +1,11 @@
+{
+    "vs_initial": [false, false, false, false, false],
+    "Voltage_step": [0.6, 1.9, 0.0, 0.6, 0.6],
+    "Scan_Rate": [800.0, 800.0, 800.0, 800.0, 800.0],
+    "Scan_number": 2,
+    "Record_every_dE": 0.01,
+    "Average_over_dE": true,
+    "N_Cycles": 25,
+    "Begin_measuring_I": 0.98,
+    "End_measuring_I": 1
+}
