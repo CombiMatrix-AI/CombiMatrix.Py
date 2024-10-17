@@ -10,4 +10,11 @@ Yonder Integrated Self-Driving Laboratory Software Suite
 
 ### Run Tests
 - Cd into the root folder
+- Download dependencies by running `poetry update --with dev`
 - Run `poetry run python -m pytest tests` to run the tests
+
+### Build Application (WIP)
+- Cd into the root folder
+- Download dependencies by running `poetry update --with build`
+- Run `poetry run build` to build the application
+- Run the application from `app` in the `dist` directory
